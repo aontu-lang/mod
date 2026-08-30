@@ -1,0 +1,31 @@
+{
+  "name": "@aontu-lang/mod",
+  "version": "0.1.0",
+  "description": "Transparency-log client for the Aontu module system: a port of golang.org/x/mod/sumdb/tlog's verifying half, differentially tested against upstream Go.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=24"
+  },
+  "files": [
+    "dist",
+    "src",
+    "vectors",
+    "LICENSE",
+    "LICENSES",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "build": "tsc --build src test",
+    "test": "node --enable-source-maps --test \"dist-test/**/*.test.js\"",
+    "test-cov": "node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test \"dist-test/**/*.test.js\"",
+    "vectors": "cd goref && go run . > ../vectors/tlog.json",
+    "clean": "rm -rf dist dist-test node_modules package-lock.json"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "typescript": "7.0.2"
+  }
+}
