@@ -114,21 +114,36 @@ function isValidName(name: string): boolean {
 // A note, once opened.
 export type Note = {
   text: string
-  // The verifiers whose signatures were present AND checked out. A
-  // signature by an unknown key is not an error and is not here: a
-  // witness this client does not know is a normal thing to meet.
+  // The verifiers whose signatures were present AND checked out.
+  // NEVER EMPTY -- see openNote. A signature by an unknown key is not
+  // an error and is not here: a witness this client does not know is a
+  // normal thing to meet, provided somebody it DOES know also signed.
   verified: Verifier[]
 }
 
 
 // Open a note, verifying every signature made by a known verifier.
 //
-// THE RETURN IS NOT A BOOLEAN, and that matters. `verified` may be
-// empty -- a well-formed note none of whose signers are known -- and a
-// caller that treats "opened" as "trusted" has skipped the check. Every
-// caller must ask which verifiers signed, and decide whether that set
-// is enough. The K-of-N witness policy G10 phase 6 describes is a
-// predicate over this list, which is why it is a list.
+// THE RETURN IS NOT A BOOLEAN, and that matters: a caller must ask
+// WHICH verifiers signed and decide whether that set is enough. The
+// K-of-N witness policy G10 phase 6 describes is a predicate over this
+// list, which is why it is a list.
+//
+// A NOTE NOBODY KNOWN SIGNED IS REFUSED, not opened with an empty
+// list. The first draft of this file did the latter and left the
+// caller to notice, which put it at odds with upstream's
+// UnverifiedNoteError -- and a disagreement about whether a signature
+// check passed is the worst class of parity breach there is. The Go
+// side found it (go/tlog_test.go in aontu-lang/aontu), and upstream's
+// line is the right one: an error forces handling where a doc comment
+// does not, and it costs the witness story nothing, because a
+// checkpoint always carries the LOG's own signature -- which the
+// client knows by construction -- so a usable note always has at least
+// one verified signer. The zero case only arises for a note the client
+// could not act on anyway.
+//
+// Unknown signers ALONGSIDE a known one are still skipped, which is
+// what actually makes cosignatures additive.
 export function openNote(msg: string, known: Verifier[]): Note {
   // Valid UTF-8 with no ASCII control characters but newline. Refusing
   // control characters keeps a note from carrying a second apparent
@@ -202,6 +217,10 @@ export function openNote(msg: string, known: Verifier[]): Note {
       // signer is.
       throw new Error('note: invalid signature for key ' + v.name)
     }
+  }
+
+  if (0 === verified.length) {
+    throw new Error('note: no verifiable signatures')
   }
 
   return { text, verified }
