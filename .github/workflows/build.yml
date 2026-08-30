@@ -60,13 +60,11 @@ jobs:
           node-version: 24.x
       - run: npm ci
       - run: npm run build
+      # NODE ENFORCES THE FLOOR, rather than this job parsing the
+      # report for it. The first version of this step grepped the
+      # human-readable summary line, which is prefixed `#` under the
+      # TAP reporter and `i` under the spec reporter -- so it passed
+      # locally and failed on the runner at a genuine 100%. A gate
+      # that depends on which reporter is in use is not a gate.
       - name: 100% lines, branches and functions
-        run: |
-          npm run test-cov 2>&1 | tee cov.txt
-          if grep -qE '^# all files \|( *)100\.00 \|( *)100\.00 \|( *)100\.00' cov.txt; then
-            echo "covcheck: 100%"
-          else
-            echo "covcheck: BELOW 100% -- see the report above"
-            grep -E '^# (file|all files| [a-z])' cov.txt || true
-            exit 1
-          fi
+        run: npm run test-cov-check

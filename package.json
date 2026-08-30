@@ -22,7 +22,8 @@
     "test": "node --enable-source-maps --test \"dist-test/**/*.test.js\"",
     "test-cov": "node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test \"dist-test/**/*.test.js\"",
     "vectors": "cd goref && go run . > ../vectors/tlog.json",
-    "clean": "rm -rf dist dist-test node_modules package-lock.json"
+    "clean": "rm -rf dist dist-test node_modules package-lock.json",
+    "test-cov-check": "node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test \"dist-test/**/*.test.js\""
   },
   "devDependencies": {
     "@types/node": "26.2.0",
