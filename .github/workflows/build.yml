@@ -1,0 +1,70 @@
+# The differential gate. The TypeScript port is checked against golden
+# vectors that UPSTREAM Go produced, and the vectors are regenerated
+# from the pinned upstream on every run so a committed vector file that
+# no longer matches the pin fails here rather than silently standing.
+
+name: build
+
+on: ['push', 'pull_request']
+
+jobs:
+  test:
+    name: TypeScript
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [24.x, latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+  # The vectors are DERIVED, not authored, so CI re-derives them and
+  # requires the working tree to be clean afterwards. Without this the
+  # committed file could drift from the pinned upstream and every test
+  # would keep passing against the stale copy -- which is precisely the
+  # failure a golden-vector suite is supposed to make impossible.
+  vectors:
+    name: Vectors match pinned upstream
+    timeout-minutes: 6
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          # The floor the pin implies: x/mod v0.32.0 declares go 1.24.0,
+          # and is the newest release that still does. See
+          # UPSTREAM_GO_MOD.md.
+          go-version: '1.24'
+      - run: go vet ./...
+        working-directory: goref
+      - run: npm run vectors
+      - name: The committed vectors must equal the regenerated ones
+        run: git diff --exit-code -- vectors/
+
+  coverage:
+    name: Coverage gate
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - run: npm ci
+      - run: npm run build
+      # NODE ENFORCES THE FLOOR, rather than this job parsing the
+      # report for it. The first version of this step grepped the
+      # human-readable summary line, which is prefixed `#` under the
+      # TAP reporter and `i` under the spec reporter -- so it passed
+      # locally and failed on the runner at a genuine 100%. A gate
+      # that depends on which reporter is in use is not a gate.
+      - name: 100% lines, branches and functions
+        run: npm run test-cov-check
