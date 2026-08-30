@@ -280,13 +280,34 @@ describe('note', () => {
   })
 
 
-  test('an-unknown-signer-is-not-a-failure', () => {
-    // The whole witness story depends on this: a note gathering
-    // cosignatures a client does not recognise must still open, with
-    // those signatures simply absent from `verified`.
-    const note = openNote(N.signed[0].msg, [])
+  test('a-note-no-known-key-signed-is-refused', () => {
+    // NOT opened with an empty verified list, which is what this port
+    // did at first. Upstream refuses it (UnverifiedNoteError) and so
+    // must this: the Go side runs the same vectors, and two ports
+    // disagreeing about whether a signature check passed is the worst
+    // class of parity breach. Twin: TestTlogNotes in aontu/go.
+    Assert.throws(() => openNote(N.signed[0].msg, []),
+      /no verifiable signatures/)
+  })
+
+
+  test('an-unknown-signer-alongside-a-known-one-is-skipped', () => {
+    // THIS is the case the witness story actually needs, and it is
+    // unaffected by the rule above: a note gathering cosignatures a
+    // client does not recognise still opens, because the log's own
+    // signature is one it does know.
+    const known = [parseVerifierKey(N.verifierKey)]
+    const good = N.signed[0].msg
+    const split = good.lastIndexOf('\n\n')
+    // A second signature line naming a key this client has never heard
+    // of, appended to a note it can verify.
+    const stranger = '— other.example ' +
+      Buffer.alloc(68).toString('base64') + '\n'
+    const note = openNote(good + stranger, known)
     Assert.equal(note.text, N.signed[0].text)
-    Assert.deepEqual(note.verified, [])
+    Assert.equal(note.verified.length, 1)
+    Assert.equal(note.verified[0].name, N.name)
+    Assert.ok(0 < split)
   })
 
 
