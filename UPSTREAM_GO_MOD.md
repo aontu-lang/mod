@@ -9,11 +9,11 @@ links the real thing and emits the vectors the translation is held to.
 ## Why this version, and not the latest
 
 `x/mod` raised its own minimum Go version to **1.25.0 at v0.34.0**.
-Aontu's Go port declares `go 1.24.7` and its CI matrix runs
+aontu's Go port declares `go 1.24.7` and its CI matrix runs
 `go-version: ['1.24', 'stable']`, so importing v0.34.0 or later from
 `aontu/go` would break the 1.24 job. **v0.32.0 is the newest release
 that still declares `go 1.24.0`**, and it is therefore the pin until
-Aontu itself moves off 1.24 — which is a compatibility decision for
+aontu itself moves off 1.24: which is a compatibility decision for
 the language, not one to make by accident through a dependency bump.
 
 Verified at pin time:
@@ -27,10 +27,10 @@ Verified at pin time:
 
 | This repository | Upstream |
 |---|---|
-| `src/hash.ts` | `sumdb/tlog/tlog.go` — `RecordHash`, `NodeHash`, hash encoding |
-| `src/tree.ts` | `sumdb/tlog/tlog.go` — `StoredHashIndex`, `SplitStoredHashIndex`, `StoredHashCount`, `TreeHash`, `maxpow2` |
-| `src/proof.ts` | `sumdb/tlog/tlog.go` — `CheckRecord`, `CheckTree` and their runners |
-| `src/tile.ts` | `sumdb/tlog/tile.go` — `TileForIndex`, `HashFromTile`, `NewTiles`, `Tile.Path`, `ParseTilePath` |
+| `src/hash.ts` | `sumdb/tlog/tlog.go`: `RecordHash`, `NodeHash`, hash encoding |
+| `src/tree.ts` | `sumdb/tlog/tlog.go`: `StoredHashIndex`, `SplitStoredHashIndex`, `StoredHashCount`, `TreeHash`, `maxpow2` |
+| `src/proof.ts` | `sumdb/tlog/tlog.go`: `CheckRecord`, `CheckTree` and their runners |
+| `src/tile.ts` | `sumdb/tlog/tile.go`: `TileForIndex`, `HashFromTile`, `NewTiles`, `Tile.Path`, `ParseTilePath` |
 | `src/note.ts` | `sumdb/note/note.go` (`Open`, key parsing, key hash) and `sumdb/tlog/note.go` (`ParseTree`) |
 | `goref/main.go` | links `sumdb/tlog` and `sumdb/note` directly |
 
@@ -51,7 +51,7 @@ Verified at pin time:
 
 3. **Errors are `undefined` returns or thrown `Error`s**, not Go
    `error` values, and the two proof checkers return `boolean` rather
-   than `error` — a checker whose failure mode is a falsy value cannot
+   than `error`: a checker whose failure mode is a falsy value cannot
    be accidentally treated as success by an unchecked call.
 
 4. **Upstream `panic`s become thrown `Error`s** at the same places,
@@ -75,5 +75,5 @@ Verified at pin time:
    vector diff on a moved pin is upstream's behaviour changing and
    must be understood before it is accepted.
 5. Port the applicable changes.
-6. `npm test` — the differential suite is the gate.
+6. `npm test`: the differential suite is the gate.
 7. Record any new divergence above.
