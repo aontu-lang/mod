@@ -25,9 +25,12 @@ import {
   recordHash, nodeHash, formatHash, parseHash,
   storedHashIndex, splitStoredHashIndex, storedHashCount, treeHash,
   checkRecord, checkTree,
-  tileForIndex, tilePath, parseTilePath,
+  tileForIndex,
   keyHash, parseVerifierKey, openNote, parseTree,
 } from '../dist/index'
+
+// The path functions are not on the 0.1.0 public surface.
+import { tilePath, parseTilePath } from '../dist/tile'
 
 
 type Vectors = {

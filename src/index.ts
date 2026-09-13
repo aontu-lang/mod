@@ -21,9 +21,9 @@ export type { HashReader } from './tree'
 export { checkRecord, checkTree } from './proof'
 export type { RecordProof, TreeProof } from './proof'
 
-export {
-  tileForIndex, hashFromTile, newTiles, tilePath, parseTilePath,
-} from './tile'
+// No path API at 0.1.0: the addressing is Go sumdb's, not C2SP
+// tlog-tiles, and the choice is not settled. See tile.ts.
+export { tileForIndex, hashFromTile, newTiles } from './tile'
 export type { Tile } from './tile'
 
 export { keyHash, parseVerifierKey, openNote, parseTree } from './note'

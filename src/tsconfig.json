@@ -16,6 +16,7 @@
     "declaration": true,
     "declarationDir": "../dist",
     "types": ["node"],
-    "composite": true
+    "composite": true,
+    "tsBuildInfoFile": "../dist/.tsbuildinfo"
   }
 }

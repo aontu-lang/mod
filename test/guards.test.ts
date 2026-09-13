@@ -21,10 +21,13 @@ import {
   HASH_SIZE, recordHash, nodeHash, formatHash, parseHash, hashEqual,
   maxpow2, trailingZeros, storedHashIndex, storedHashCount, treeHash,
   checkRecord, checkTree,
-  tileForIndex, hashFromTile, newTiles, tilePath, parseTilePath,
+  tileForIndex, hashFromTile, newTiles,
   keyHash, parseVerifierKey, openNote, parseTree,
 } from '../dist/index'
 import type { Tile } from '../dist/index'
+
+// The path functions are not on the 0.1.0 public surface.
+import { tilePath, parseTilePath } from '../dist/tile'
 
 
 const V = JSON.parse(Fs.readFileSync(

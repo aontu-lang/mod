@@ -1,29 +1,62 @@
 {
-  "name": "@aontu-lang/mod",
+  "name": "@aontu/mod",
   "version": "0.1.0",
   "description": "Transparency-log client for the Aontu module system: a port of golang.org/x/mod/sumdb/tlog's verifying half, differentially tested against upstream Go.",
-  "license": "MIT",
+  "license": "MIT AND BSD-3-Clause",
+  "author": "Richard Rodger (https://richardrodger.com)",
+  "homepage": "https://github.com/aontu-lang/mod#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aontu-lang/mod.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aontu-lang/mod/issues"
+  },
+  "keywords": [
+    "transparency-log",
+    "tlog",
+    "sumdb",
+    "merkle",
+    "aontu"
+  ],
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "engines": {
     "node": ">=24"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
-    "dist",
+    "dist/*.js",
+    "dist/*.d.ts",
+    "dist/*.map",
     "src",
     "vectors",
     "LICENSE",
     "LICENSES",
+    "SECURITY.md",
     "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
     "build": "tsc --build src test",
+    "prepublishOnly": "npm run build",
+    "pretest": "npm run build",
     "test": "node --enable-source-maps --test \"dist-test/**/*.test.js\"",
+    "pretest-cov": "npm run build",
     "test-cov": "node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test \"dist-test/**/*.test.js\"",
+    "pretest-cov-check": "npm run build",
+    "test-cov-check": "node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test \"dist-test/**/*.test.js\"",
     "vectors": "cd goref && go run . > ../vectors/tlog.json",
-    "clean": "rm -rf dist dist-test node_modules package-lock.json",
-    "test-cov-check": "node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test \"dist-test/**/*.test.js\""
+    "clean": "rm -rf dist dist-test node_modules"
   },
   "devDependencies": {
     "@types/node": "26.2.0",

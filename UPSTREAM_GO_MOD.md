@@ -8,20 +8,23 @@ links the real thing and emits the vectors the translation is held to.
 
 ## Why this version, and not the latest
 
-`x/mod` raised its own minimum Go version to **1.25.0 at v0.34.0**.
-aontu's Go port declares `go 1.24.7` and its CI matrix runs
-`go-version: ['1.24', 'stable']`, so importing v0.34.0 or later from
-`aontu/go` would break the 1.24 job. **v0.32.0 is the newest release
-that still declares `go 1.24.0`**, and it is therefore the pin until
-aontu itself moves off 1.24: which is a compatibility decision for
-the language, not one to make by accident through a dependency bump.
+`x/mod` raised its own minimum Go version to **1.25.0 at v0.34.0**, and
+again to **1.26.0 at v0.41.0**. aontu's Go port declares `go 1.24.7` and
+its CI matrix runs `go-version: ['1.24', 'stable']`, so importing
+v0.34.0 or later from `aontu/go` would break the 1.24 job. The ceiling
+that constraint sets is **v0.33.0, the newest release that still
+declares `go 1.24.0`**, so the pin is one release short of it. Closing
+that gap is a compatibility decision with a vectors regeneration behind
+it; going past it is a decision for the language, and neither is one to
+make by accident through a dependency bump.
 
-Verified at pin time:
+Derived from `proxy.golang.org` on 2026-09-13:
 
 | x/mod | declares |
 |-------|----------|
-| v0.29.0 – v0.32.0 | `go 1.24.0` |
-| v0.34.0 and later | `go 1.25.0` |
+| v0.28.0 – v0.33.0 | `go 1.24.0` |
+| v0.34.0 – v0.40.0 | `go 1.25.0` |
+| v0.41.0 | `go 1.26.0` |
 
 ## Derived components
 
