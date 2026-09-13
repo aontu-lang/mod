@@ -7,10 +7,15 @@
 //
 // TILES: the log's hashes cut into fixed-height blocks, each a single
 // immutable object at a stable path. This is what makes a log servable
-// as static files behind a CDN with no request-shaped computation --
-// the C2SP `tlog-tiles` shape, and the direction Certificate
-// Transparency and Sigstore both converged on after starting with
-// parameterised proof endpoints.
+// as static files behind a CDN with no request-shaped computation, the
+// direction Certificate Transparency and Sigstore both converged on
+// after starting with parameterised proof endpoints.
+//
+// THE ADDRESSING IS GO'S SUMDB SHAPE, NOT C2SP `tlog-tiles`:
+// `tile/<H>/<L>/<N>`, with the tile height in the path and level -1
+// spelled `data`. C2SP omits the height and names entry bundles
+// `tile/entries/<N>`. The hashing, the proofs and the note handling are
+// compatible with either; only the addressing is not.
 //
 // The path encoding chunks N three digits at a time (`x123/x456/789`)
 // so no directory holds more than a few thousand entries. That is an
@@ -176,7 +181,9 @@ function pad3(n: number): string {
 }
 
 
-// The inverse of tilePath.
+// The inverse of tilePath, and Go sumdb paths only: the height field is
+// required and must satisfy 1 <= h <= 30, so a conforming C2SP
+// `tlog-tiles` path is refused here as malformed.
 //
 // THE LAST LINE IS THE WHOLE CHECK. Upstream re-renders the parsed tile
 // and refuses anything that does not round-trip, which is how a path
