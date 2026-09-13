@@ -1,4 +1,4 @@
-# `@aontu-lang/mod`
+# `@aontu/mod`
 
 The transparency-log client for the [aontu](https://github.com/aontu-lang/aontu)
 module system. It is a TypeScript port of the verifying half of
@@ -19,16 +19,30 @@ requiring a running log.
 | `vectors/` | Committed test vectors |
 
 The client verifies proofs; it does not construct them or sign checkpoints.
-The service implementation, including quotas, key custody, and deployment,
-is in `aontu-lang/system`. Client verification must remain independently
-buildable from public code.
+The service implementation, including quotas and deployment, is in
+`aontu-lang/system`. Under
+[ADR-019](https://github.com/aontu-lang/aontu/blob/main/ADR.md) the log
+itself is federated to Sigstore's Rekor v2, so this package is the verifier
+for a log the project does not run. Client verification must remain
+independently buildable from public code.
+
+**0.1.0 exposes no path API.** `tilePath` and `parseTilePath` are exported
+from `src/tile.ts` but not from the package entry point: the addressing they
+implement is Go's sumdb shape, not C2SP `tlog-tiles`, and which one this
+package commits to is not settled.
 
 ## Verify the port
 
 ```sh
+npm ci            # install the build toolchain
 npm run vectors   # regenerate from pinned upstream Go
-npm test          # compare this port with the vectors
+npm test          # build, then compare this port with the vectors
 ```
+
+`npm run vectors` needs Go 1.24 and network access: `goref/` has no
+vendor directory, so the pinned `golang.org/x/mod` is fetched on each
+run. Running `npm test` on its own verifies the port against the
+committed vectors and needs neither.
 
 The suite includes valid and invalid proofs. Invalid-proof cases check that
 the verifier refuses malformed or inconsistent input; see `test/vectors.test.ts`.
