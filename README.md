@@ -42,7 +42,11 @@ manifest digest and the signer a trust entry names, with `signerId`,
 the Sigstore encoding will verify, is [PROOF-CONTRACT.md](PROOF-CONTRACT.md).
 
 **Releases** publish over OIDC trusted publishing by dispatching
-`publish.yml` from `main`; nothing publishes over a token.
+`publish.yml` from `main`; nothing publishes over a token. The workflow
+is written at `.github/pending-workflows/publish.yml`, because the
+change that added it could not write under `.github/workflows/`; a
+maintainer moves it there (one `git mv`) and registers the trusted
+publisher on npmjs.com before the first release.
 
 ## Verify the port
 
