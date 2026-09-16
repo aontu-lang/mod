@@ -1,7 +1,7 @@
 {
   "name": "@aontu/mod",
-  "version": "0.1.0",
-  "description": "Transparency-log client for the Aontu module system: a port of golang.org/x/mod/sumdb/tlog's verifying half, differentially tested against upstream Go.",
+  "version": "0.2.0",
+  "description": "The client half of the aontu package system's proof contract: a transparency-log verifier ported from golang.org/x/mod/sumdb/tlog and held to upstream Go by vectors, C2SP tlog-tiles paths, and the key provider's proof.",
   "license": "MIT AND BSD-3-Clause",
   "author": "Richard Rodger (https://richardrodger.com)",
   "homepage": "https://github.com/aontu-lang/mod#readme",

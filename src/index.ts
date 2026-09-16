@@ -21,10 +21,19 @@ export type { HashReader } from './tree'
 export { checkRecord, checkTree } from './proof'
 export type { RecordProof, TreeProof } from './proof'
 
-// No path API at 0.1.0: the addressing is Go sumdb's, not C2SP
-// tlog-tiles, and the choice is not settled. See tile.ts.
+// The tile arithmetic is sumdb's and C2SP's alike; the PATHS this
+// package commits to are C2SP tlog-tiles (c2sp.ts), the shape Rekor v2
+// serves. sumdb's own path encoding stays in tile.ts for the vectors.
 export { tileForIndex, hashFromTile, newTiles } from './tile'
 export type { Tile } from './tile'
+export { C2SP_TILE_HEIGHT, c2spTilePath, parseC2spTilePath } from './c2sp'
+export type { C2spTile } from './c2sp'
+
+// The key provider's proof, under the contract of ADR-024
+// (PROOF-CONTRACT.md).
+export { SIGNATURE_ENCODING, signedBytes, signerId, parseSignerId, verifyKeyProof }
+  from './keyproof'
+export type { KeyProof } from './keyproof'
 
 export { keyHash, parseVerifierKey, openNote, parseTree } from './note'
 export type { Verifier, Note, Tree } from './note'
