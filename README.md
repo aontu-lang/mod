@@ -42,11 +42,12 @@ manifest digest and the signer a trust entry names, with `signerId`,
 the Sigstore encoding will verify, is [PROOF-CONTRACT.md](PROOF-CONTRACT.md).
 
 **Releases** publish over OIDC trusted publishing by dispatching
-`publish.yml` from `main`; nothing publishes over a token. The workflow
-waits in [`patch/`](patch/README.md) as a patch, because the change
-that wrote it could not push under `.github/workflows/`; a maintainer
-applies it with `git am` and registers the trusted publisher on
-npmjs.com before the first release.
+`publish.yml` from `main`, or on a pushed `v*` tag, which publishes
+without tagging; nothing publishes over a token. A maintainer registers
+the trusted publisher on npmjs.com before the first release
+(`docs/manual-tasks.md` §2 in `aontu-lang/system`). The workflow waits
+in [`patch/`](patch/README.md) as a patch, because the change that
+wrote it could not push under `.github/workflows/`.
 
 ## Verify the port
 
