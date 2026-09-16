@@ -13,8 +13,10 @@ requiring a running log.
 | `src/hash.ts` | Leaf and node hashing, with RFC 6962 domain separation |
 | `src/tree.ts` | Stored-hash addressing and tree roots |
 | `src/proof.ts` | Inclusion and consistency verification |
-| `src/tile.ts` | Tile coordinates, paths, and hash extraction |
+| `src/tile.ts` | Tile coordinates, sumdb paths, and hash extraction |
+| `src/c2sp.ts` | C2SP `tlog-tiles` paths, the shape Rekor v2 serves |
 | `src/note.ts` | Checkpoint key IDs, Ed25519 verification, and tree heads |
+| `src/keyproof.ts` | The key provider's proof over a manifest digest ([PROOF-CONTRACT.md](PROOF-CONTRACT.md)) |
 | `goref/` | Go program that generates vectors using the pinned upstream code |
 | `vectors/` | Committed test vectors |
 
@@ -26,10 +28,25 @@ itself is federated to Sigstore's Rekor v2, so this package is the verifier
 for a log the project does not run. Client verification must remain
 independently buildable from public code.
 
-**0.1.0 exposes no path API.** `tilePath` and `parseTilePath` are exported
-from `src/tile.ts` but not from the package entry point: the addressing they
-implement is Go's sumdb shape, not C2SP `tlog-tiles`, and which one this
-package commits to is not settled.
+**The paths are C2SP `tlog-tiles`.** `c2spTilePath` and
+`parseC2spTilePath` address the tiles Rekor v2 serves
+(`tile/<L>/<N>[.p/<W>]`, `tile/entries/<N>`), which is where the log this
+package verifies lives under ADR-019. Go sumdb's own encoding
+(`tile/<H>/<L>/<N>`, level -1 as `data`) stays in `src/tile.ts` for the
+differential vectors and is not on the package surface.
+
+**The proof contract** is the other half of the client:
+`verifyKeyProof` checks the key provider's `<version>.sig` against the
+manifest digest and the signer a trust entry names, with `signerId`,
+`parseSignerId` and `signedBytes` beside it. What it verifies, and what
+the Sigstore encoding will verify, is [PROOF-CONTRACT.md](PROOF-CONTRACT.md).
+
+**Releases** publish over OIDC trusted publishing by dispatching
+`publish.yml` from `main`; nothing publishes over a token. The workflow
+is written at `.github/pending-workflows/publish.yml`, because the
+change that added it could not write under `.github/workflows/`; a
+maintainer moves it there (one `git mv`) and registers the trusted
+publisher on npmjs.com before the first release.
 
 ## Verify the port
 
