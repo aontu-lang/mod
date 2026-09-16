@@ -126,7 +126,8 @@ jobs:
           set -euo pipefail
           GH="$(npm view "@aontu/mod@$V" gitHead 2>/dev/null || true)"
           if [ -z "$GH" ]; then
-            echo "::warning::npm records no gitHead for $V"
+            echo "::error::npm records no gitHead for $V; it cannot be shown to be this commit"
+            exit 1
           elif [ "$GH" != "$GITHUB_SHA" ]; then
             echo "::error::npm has $V built from $GH, but this run is $GITHUB_SHA"
             exit 1

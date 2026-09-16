@@ -10,7 +10,7 @@ import * as Assert from 'node:assert'
 import { generateKeyPairSync, sign as cryptoSign } from 'node:crypto'
 
 import {
-  SIGNATURE_ENCODING, signedBytes, signerId, parseSignerId, verifyKeyProof,
+  SIGNATURE_ENCODING, signedBytes, signerId, parseSignerId, verifyKeyProof, smallOrderKey,
 } from '../dist/index'
 import type { KeyProof } from '../dist/index'
 
@@ -85,8 +85,33 @@ describe('keyproof', () => {
     // A signature of the wrong length, or a key of the wrong length.
     Assert.equal(verifyKeyProof({ ...proof, signature: 'AAAA' }, DIGEST, id),
       'the proof carries a malformed key or signature')
-    const short = 'ed25519:' + 'A'.repeat(43)
-    Assert.equal(verifyKeyProof({ ...proof, signer: short }, DIGEST, short) === undefined, false)
+    // A key of small order, or one whose encoding is not canonical:
+    // any signature verifies under the first, so both are refused
+    // before the signature is looked at.
+    const keyOf = (hex: string) => 'ed25519:' + Buffer.from(hex, 'hex').toString('base64url')
+    for (const hex of ['00'.repeat(32), '01' + '00'.repeat(31), '01' + '00'.repeat(30) + '80',
+      'ec' + 'ff'.repeat(30) + '7f', 'ed' + 'ff'.repeat(30) + '7f', 'ee' + 'ff'.repeat(30) + 'ff',
+      '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05',
+      'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa']) {
+      Assert.equal(smallOrderKey(Buffer.from(hex, 'hex')), true, hex)
+      Assert.equal(verifyKeyProof({ ...proof, signer: keyOf(hex) }, DIGEST, keyOf(hex)),
+        'the signer is a key of small order', hex)
+    }
+    Assert.equal(smallOrderKey(Buffer.from('02' + 'ff'.repeat(30) + '7f', 'hex')), false)
+    Assert.equal(smallOrderKey(Buffer.from('ed' + 'ff'.repeat(29) + 'fe7f', 'hex')), false)
+    Assert.equal(smallOrderKey(other.raw), false)
+    // Base64url with one spelling: trailing bits set, or padding, are
+    // malformed even where Buffer would decode them to the same bytes.
+    const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+    const slack = (text: string) => text.slice(0, -1) + B64[B64.indexOf(text[text.length - 1]) | 1]
+    Assert.equal(verifyKeyProof({ ...proof, signature: slack(proof.signature) }, DIGEST, id),
+      'the proof carries a malformed key or signature')
+    Assert.equal(verifyKeyProof({ ...proof, signer: slack(id) }, DIGEST, slack(id)),
+      'the proof carries a malformed key or signature')
+    Assert.equal(verifyKeyProof({ ...proof, signature: proof.signature.slice(0, 85) + '=' }, DIGEST, id),
+      'the proof carries a malformed key or signature')
+    Assert.equal(verifyKeyProof({ ...proof, signature: proof.signature + 'AA' }, DIGEST, id),
+      'the proof carries a malformed key or signature')
     // The right shape, the wrong bits.
     const flipped = ('A' === proof.signature[0] ? 'B' : 'A') + proof.signature.slice(1)
     Assert.equal(verifyKeyProof({ ...proof, signature: flipped }, DIGEST, id),

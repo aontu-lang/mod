@@ -36,6 +36,7 @@ describe('c2sp', () => {
   test('formatting-refuses-a-tile-that-cannot-exist', () => {
     Assert.throws(() => c2spTilePath({ level: 0, index: -1 }), /invalid tile index/)
     Assert.throws(() => c2spTilePath({ level: 0, index: 1.5 }), /invalid tile index/)
+    Assert.throws(() => c2spTilePath({ level: 0, index: Number.MAX_SAFE_INTEGER + 2 }), /invalid tile index/)
     Assert.throws(() => c2spTilePath({ level: -1, index: 0 }), /invalid tile level/)
     Assert.throws(() => c2spTilePath({ level: 64, index: 0 }), /invalid tile level/)
     Assert.throws(() => c2spTilePath({ level: 0.5, index: 0 }), /invalid tile level/)
@@ -49,9 +50,14 @@ describe('c2sp', () => {
     for (const bad of ['', 'tile', 'tile/0', 'tile/0/', 'tile/0/5', 'tile/0/0005',
       'tile/0/x001', 'tile/0/001/000', 'tile/0/x001/x000', 'tile/00/000', 'tile/01/000',
       'tile/a/000', 'tile/0/000/', 'tile/0/000.p', 'tile/0/000.p/', 'tile/0/000.p/x',
-      'tile/0/000.p/01', 'tile/0/000.p/1000', '/tile/0/000', 'tile/0/000 ', 'tiles/0/000']) {
+      'tile/0/000.p/01', 'tile/0/000.p/1000', '/tile/0/000', 'tile/0/000 ', 'tiles/0/000',
+      'tile/0/x000/001', 'tile/0/x000/x000/001', 'tile/entries/x000/000']) {
       Assert.throws(() => parseC2spTilePath(bad), /malformed tile path/, bad)
     }
+    Assert.equal(parseC2spTilePath('tile/0/x009/x007/x199/x254/x740/991').index, 9007199254740991)
+    Assert.throws(() => parseC2spTilePath('tile/0/x009/x007/x199/x254/x740/992'), /invalid tile index 9007199254740992/)
+    Assert.throws(() => parseC2spTilePath('tile/0/x001/x000/x000/x000/x000/x000/000'), /invalid tile index 1000000000000000000/)
+    Assert.throws(() => parseC2spTilePath('tile/0/x000/x000/x000/x000/x000/x000/000'), /malformed tile path/)
     Assert.throws(() => parseC2spTilePath('tile/64/000'), /invalid tile level 64/)
     Assert.throws(() => parseC2spTilePath('tile/0/000.p/0'), /invalid partial tile width 0/)
     Assert.throws(() => parseC2spTilePath('tile/0/000.p/256'), /invalid partial tile width 256/)

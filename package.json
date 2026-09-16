@@ -41,6 +41,7 @@
     "dist/*.map",
     "src",
     "vectors",
+    "PROOF-CONTRACT.md",
     "LICENSE",
     "LICENSES",
     "SECURITY.md",

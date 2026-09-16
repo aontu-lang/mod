@@ -43,7 +43,7 @@ function indexPath(n: number): string {
 
 // The path of a tile.
 export function c2spTilePath(t: C2spTile): string {
-  if (!Number.isInteger(t.index) || 0 > t.index) {
+  if (!Number.isSafeInteger(t.index) || 0 > t.index) {
     throw new Error('c2sp: invalid tile index ' + t.index)
   }
   if ('entries' !== t.level && (!Number.isInteger(t.level) || 0 > t.level || MAX_LEVEL < t.level)) {
@@ -58,8 +58,10 @@ export function c2spTilePath(t: C2spTile): string {
 
 
 // The tile a path names. Refuses anything but the exact encoding: a
-// leading zero in a level, a group of the wrong length, an x on the
-// last group or none on an earlier one, a width outside 1 to 255.
+// leading zero in a level, a group of the wrong length, a leading
+// all-zero group, an x on the last group or none on an earlier one, a
+// width outside 1 to 255, an index past what a number holds exactly.
+// The path is formatted again and must come back the same.
 export function parseC2spTilePath(path: string): C2spTile {
   const m = /^tile\/(entries|0|[1-9][0-9]?)\/((?:x[0-9]{3}\/)*[0-9]{3})(?:\.p\/(0|[1-9][0-9]{0,2}))?$/.exec(path)
   if (null == m) {
@@ -69,7 +71,11 @@ export function parseC2spTilePath(path: string): C2spTile {
   if ('entries' !== level && MAX_LEVEL < level) {
     throw new Error('c2sp: invalid tile level ' + m[1])
   }
-  const index = Number(m[2].replace(/x|\//g, ''))
+  const digits = m[2].replace(/x|\//g, '').replace(/^0+(?=.)/, '')
+  const index = Number(digits)
+  if (!Number.isSafeInteger(index)) {
+    throw new Error('c2sp: invalid tile index ' + digits)
+  }
   const t: C2spTile = { level, index }
   if (undefined !== m[3]) {
     const width = Number(m[3])
@@ -77,6 +83,9 @@ export function parseC2spTilePath(path: string): C2spTile {
       throw new Error('c2sp: invalid partial tile width ' + m[3])
     }
     t.width = width
+  }
+  if (c2spTilePath(t) !== path) {
+    throw new Error('c2sp: malformed tile path ' + JSON.stringify(path))
   }
   return t
 }

@@ -29,7 +29,19 @@ export type KeyProof = {
 }
 
 const KEY_ID_RE = /^ed25519:[A-Za-z0-9_-]{43}$/
+const SIG_RE = /^[A-Za-z0-9_-]{86}$/
 const DIGEST_RE = /^sha256:[0-9a-f]{64}$/
+
+// The small-order points of the curve, by y with the sign bit cleared:
+// a signature under one verifies for any message. The last entry is p,
+// and every encoding at or above it is not canonical.
+const SMALL_ORDER_Y = new Set([
+  '0000000000000000000000000000000000000000000000000000000000000000',
+  '0100000000000000000000000000000000000000000000000000000000000000',
+  '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05',
+  'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a',
+  'ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f',
+])
 
 // Node has no raw-Ed25519 key import, so the 32 key bytes are wrapped
 // in the fixed SPKI DER prefix for id-Ed25519 (RFC 8410).
@@ -65,6 +77,24 @@ export function parseSignerId(id: string): Uint8Array {
 }
 
 
+// A public key no signature should be accepted under: one of the eight
+// small-order points, or an encoding that is not canonical.
+export function smallOrderKey(publicKey: Uint8Array): boolean {
+  const y = Buffer.from(publicKey)
+  y[31] &= 0x7f
+  const hex = y.toString('hex')
+  return SMALL_ORDER_Y.has(hex) || (hex.endsWith('ff'.repeat(30) + '7f') && 0xed <= y[0])
+}
+
+
+// Base64url that decodes and re-encodes to itself: Buffer drops
+// trailing bits silently, so a signature has one spelling here.
+function canonicalBase64url(text: string, length: number): Buffer | undefined {
+  const bytes = Buffer.from(text, 'base64url')
+  return length === bytes.length && bytes.toString('base64url') === text ? bytes : undefined
+}
+
+
 // Verify a key proof against the digest it must sign and the signer the
 // trust entry accepts. Answers the reason it does not hold, or
 // undefined when it does. Every path that is not a completed,
@@ -83,10 +113,13 @@ export function verifyKeyProof(
   if (p.signer !== signer) {
     return 'signed by ' + p.signer + '; the trust entry accepts ' + signer
   }
-  const raw = Buffer.from((p.signer as string).slice('ed25519:'.length), 'base64url')
-  const sig = Buffer.from(p.signature, 'base64url')
-  if (32 !== raw.length || 64 !== sig.length) {
+  const raw = canonicalBase64url((p.signer as string).slice('ed25519:'.length), 32)
+  const sig = SIG_RE.test(p.signature) ? canonicalBase64url(p.signature, 64) : undefined
+  if (undefined === raw || undefined === sig) {
     return 'the proof carries a malformed key or signature'
+  }
+  if (smallOrderKey(raw)) {
+    return 'the signer is a key of small order'
   }
   const key = createPublicKey({
     key: Buffer.concat([SPKI_ED25519_PREFIX, raw]), format: 'der', type: 'spki',
