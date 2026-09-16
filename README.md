@@ -45,9 +45,7 @@ the Sigstore encoding will verify, is [PROOF-CONTRACT.md](PROOF-CONTRACT.md).
 `publish.yml` from `main`, or on a pushed `v*` tag, which publishes
 without tagging; nothing publishes over a token. A maintainer registers
 the trusted publisher on npmjs.com before the first release
-(`docs/manual-tasks.md` §2 in `aontu-lang/system`). The workflow waits
-in [`patch/`](patch/README.md) as a patch, because the change that
-wrote it could not push under `.github/workflows/`.
+(`docs/manual-tasks.md` §2 in `aontu-lang/system`).
 
 ## Verify the port
 
