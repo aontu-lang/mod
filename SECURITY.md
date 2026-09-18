@@ -8,14 +8,10 @@ not an ordinary bug.
 
 ## Supported versions
 
-There is nothing published: `@aontu/mod` has never been released to npm,
-so there is no version range to report against. Report against `main`,
-which is what the first release will ship.
-
-No version is named here on purpose. This section named one until
-2026-09-18, and by then it named a version `package.json` had already
-moved past -- in a file that ships inside the tarball, so the stale
-claim would have been published with it.
+Report against `main`, or against the version you are running.
+`npm view @aontu/mod versions` lists what the registry holds; a fix
+ships in the next release, and there is no maintained older line to
+report against instead.
 
 ## Reporting a vulnerability
 
@@ -28,8 +24,8 @@ project's advisories are published:
 A report is most useful as a failing case: the bytes (checkpoint, note,
 tile or proof), the call that accepted them, and what upstream
 `golang.org/x/mod/sumdb/tlog` does with the same input. The vectors in
-`vectors/tlog.json` and the refusals in `test/guards.test.ts` show the
-shape of one.
+`vectors/tlog.json`, which ship with the package, and the refusals in
+the repository's `test/guards.test.ts` show the shape of one.
 
 ## Scope: acceptance is the surface
 

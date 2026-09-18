@@ -1,7 +1,7 @@
 {
   "name": "@aontu/mod",
   "version": "0.2.0",
-  "description": "The client half of the aontu package system's proof contract: a transparency-log verifier ported from golang.org/x/mod/sumdb/tlog and held to upstream Go by vectors, C2SP tlog-tiles paths, and the key provider's proof.",
+  "description": "The client half of the aontu package system's proof contract: a transparency-log verifier ported from golang.org/x/mod/sumdb/tlog and held to it by golden vectors, with C2SP tlog-tiles addressing and the key provider's proof beside it.",
   "license": "MIT AND BSD-3-Clause",
   "author": "Richard Rodger (https://richardrodger.com)",
   "homepage": "https://github.com/aontu-lang/mod#readme",
@@ -30,26 +30,27 @@
     "./package.json": "./package.json"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public"
   },
   "files": [
-    "dist/*.js",
-    "dist/*.d.ts",
-    "dist/*.map",
-    "src",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.map",
+    "src/**/*.ts",
     "vectors",
     "PROOF-CONTRACT.md",
     "LICENSE",
     "LICENSES",
     "SECURITY.md",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "UPSTREAM_GO_MOD.md"
   ],
   "scripts": {
     "build": "tsc --build src test",
-    "prepublishOnly": "npm run build",
+    "prepare": "npm run build",
     "pretest": "npm run build",
     "test": "node --enable-source-maps --test \"dist-test/**/*.test.js\"",
     "pretest-cov": "npm run build",

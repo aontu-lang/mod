@@ -1,11 +1,10 @@
 # The proof contract
 
 A published package carries a **proof**: evidence that a named identity
-signed the manifest a consumer is about to trust. The contract is
-[ADR-024](https://github.com/aontu-lang/aontu/blob/main/ADR.md) of the
-engine repository, and this package holds the client half of it. What a
-client verifies never changes with the provider; which object it fetches
-and how the signature is encoded does.
+signed the manifest a consumer is about to trust. This page is that
+contract, and this package holds its client half. What a client verifies
+never changes with the provider; which object it fetches and how the
+signature is encoded does.
 
 ## What a client verifies
 
