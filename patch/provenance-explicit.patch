@@ -1,0 +1,45 @@
+From 1238ea1bf5fd8c863ca3e3c24bedef3afbe6b713 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 18 Sep 2026 18:30:00 +0000
+Subject: [PATCH] Demand the provenance attestation rather than hope for it
+
+npm generates provenance for an OIDC publish and for nothing else, so
+the attestation is what tells a consumer this tarball came from this
+repository's workflow. But npm only turns it on by itself, and the
+auto-enable is conditional and silent: lib/utils/oidc.js requires that
+`provenance` is still at its default, that the runner is not CircleCI,
+that the forge is GitHub Actions with a public repository_visibility
+claim, and that the registry reports the package public -- all inside a
+try/catch that logs at verbose level and returns. Any of those failing
+produces an unattested publish with every step green.
+
+`--provenance` asks for it explicitly, and npm fails the publish rather
+than dropping it when it cannot be generated. For a package whose whole
+job is verifying evidence, a missing attestation should stop the
+release, not pass it.
+
+Remove patch/provenance-explicit.patch and its row in patch/README.md
+in the commit that applies this.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W4X2MprZjtGPiBVth8jTrW
+---
+ .github/workflows/publish.yml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.github/workflows/publish.yml b/.github/workflows/publish.yml
+index 66a5b22..8978e8d 100644
+--- a/.github/workflows/publish.yml
++++ b/.github/workflows/publish.yml
+@@ -143,7 +143,7 @@ jobs:
+             *-*) DIST=next ;;
+             *)   DIST=latest ;;
+           esac
+-          npm publish --access public --tag "$DIST"
++          npm publish --access public --provenance --tag "$DIST"
+ 
+   tag:
+     name: tag
+-- 
+2.43.0
+

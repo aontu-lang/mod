@@ -16,3 +16,11 @@ add `--reset-author` to the amend below to take the commit as your own.
   `node-version` matrix, so the floor `package.json` declares is the
   lowest version CI actually runs. Nothing depends on it; apply it
   whenever.
+- **`provenance-explicit.patch`** — passes `--provenance` to the
+  `npm publish` in `publish.yml`. npm's own auto-enable is conditional
+  and fails quietly; the flag makes a missing attestation fail the
+  release instead. **Apply before the first release** if the
+  attestation is meant to be a guarantee rather than a default.
+
+Both apply with `git am --3way` against `main` and are independent of
+each other.

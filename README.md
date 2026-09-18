@@ -69,9 +69,10 @@ the Sigstore encoding will verify, is [PROOF-CONTRACT.md](PROOF-CONTRACT.md).
 
 **Releases** publish over OIDC trusted publishing by dispatching
 `publish.yml` from `main`, or on a pushed `v*` tag, which publishes
-without tagging. Every release carries a provenance attestation, which
-npm generates for an OIDC publish and for nothing else; `npm audit
-signatures` in a project that installs this package checks it.
+without tagging. A release carries a provenance attestation, which npm
+generates for an OIDC publish and for nothing else; `npm audit
+signatures` in a project that installs this package is how you check
+that a given version has one.
 
 ## Verify the port
 
