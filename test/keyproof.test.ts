@@ -58,6 +58,30 @@ describe('keyproof', () => {
   })
 
 
+  test('a-signer-id-with-non-zero-spare-bits-is-refused', () => {
+    // FORTY-THREE BASE64URL CHARACTERS CARRY 258 BITS AND A KEY IS 256,
+    // so the final character has two bits the alphabet-and-length test
+    // does not constrain: four ids decode to one key, and three of them
+    // do not come back out of signerId. The regex alone accepted all
+    // four, which made parseSignerId disagree with its own inverse.
+    const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+    const k = keypair()
+    const body = k.id.slice('ed25519:'.length)
+    const last = ALPHA.indexOf(body[body.length - 1])
+    let accepted = 0
+    for (let bits = 0; 4 > bits; bits++) {
+      const id = 'ed25519:' + body.slice(0, -1) + ALPHA[(last - (last % 4)) + bits]
+      if (id === k.id) {
+        Assert.deepEqual(parseSignerId(id), k.raw)
+        accepted++
+        continue
+      }
+      Assert.throws(() => parseSignerId(id), /malformed signer id/, id)
+    }
+    Assert.equal(accepted, 1)
+  })
+
+
   test('a-proof-by-the-accepted-signer-over-this-digest-holds', () => {
     const { proof, id } = proofOver(DIGEST)
     Assert.equal(verifyKeyProof(proof, DIGEST, id), undefined)

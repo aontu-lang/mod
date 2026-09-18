@@ -68,6 +68,33 @@ Derived from `proxy.golang.org` on 2026-09-13:
    must decide whether the set of signers is sufficient, which is what
    a K-of-N witness policy is.
 
+6. **Base64 must round-trip, which refuses two kinds of spelling
+   upstream accepts.** Upstream reads `data, err := base64.StdEncoding
+   .DecodeString(s)` and refuses on `err`. Node's `Buffer` has no
+   `err`: it skips non-alphabet bytes, accepts missing padding and
+   accepts the base64url alphabet, so a length check alone lets one
+   hash, one signature or one key have unboundedly many spellings. Each
+   decode site therefore requires the bytes to re-encode to exactly the
+   input. That closes the accepting direction, and costs two kinds of
+   input upstream would take: a value with an embedded `\n` or `\r`,
+   which Go's decoder skips, and a value whose final character carries
+   non-zero spare bits, which `StdEncoding` tolerates because it is not
+   `StdEncoding.Strict()`. **The refusals are the point rather than a
+   side effect**: admitting either would put the extra spellings
+   straight back, and a checkpoint is compared as TEXT between
+   witnesses, so a second spelling is a second checkpoint. No encoder
+   produces either.
+
+7. **`openNote` takes a string, so two UTF-8 questions are settled
+   before it is called.** Upstream takes `[]byte` and distinguishes a
+   DECODE ERROR from a legitimately encoded U+FFFD (`r ==
+   utf8.RuneError && size == 1`); it also requires `utf8.ValidString`
+   on a signer name. A JavaScript string has already been decoded, and
+   a decode error has already become U+FFFD, so neither test can be
+   made here. This port refuses U+FFFD outright, which refuses a note
+   whose text legitimately contains one — the availability direction,
+   and the only one available to it.
+
 ## Changing any of this
 
 1. Read the upstream diff for `sumdb/tlog` and `sumdb/note`.

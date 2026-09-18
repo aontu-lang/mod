@@ -52,6 +52,31 @@ describe('hash guards', () => {
     Assert.equal(parseHash(formatHash(H0)).length, HASH_SIZE)
   })
 
+  test('a-hash-with-a-non-canonical-spelling-is-refused', () => {
+    // UPSTREAM REFUSES ON ITS DECODER'S ERROR; Buffer has no error. It
+    // skips non-alphabet bytes, accepts missing padding and accepts the
+    // base64url alphabet, so a length check alone lets one hash have
+    // unboundedly many spellings -- and a checkpoint is compared as
+    // TEXT by witnesses, so a second spelling is a second checkpoint.
+    // Each of these decodes to the SAME 32 bytes and must still lose.
+    const good = formatHash(H0)
+    for (const bad of [
+      good + '!!!!',                                    // trailing junk
+      '!!!!' + good,                                    // leading junk
+      good.replace(/\+/g, '-').replace(/\//g, '_'),     // base64url
+      good.slice(0, -1),                                // unpadded
+      good + '=',                                       // over-padded
+      good.slice(0, 10) + ' ' + good.slice(10),         // embedded space
+      good.slice(0, 10) + '\n' + good.slice(10),        // embedded newline
+      ' ' + good,                                       // leading space
+    ]) {
+      Assert.throws(() => parseHash(bad), /malformed hash/, JSON.stringify(bad))
+    }
+    // The canonical spelling still round-trips, which is the other half:
+    // a guard that refused everything would also pass the loop above.
+    Assert.ok(hashEqual(parseHash(good), H0))
+  })
+
   test('hash-equality-is-length-aware', () => {
     Assert.equal(hashEqual(H0, H0), true)
     Assert.equal(hashEqual(H0, H1), false)
@@ -313,6 +338,68 @@ describe('note guards', () => {
     ]) {
       Assert.throws(() => openNote(bad, known), /malformed note/,
         JSON.stringify(bad))
+    }
+  })
+
+  test('a-signature-whose-base64-is-not-canonical-is-refused', () => {
+    // Upstream reads `sig, err := base64.StdEncoding.DecodeString(b64)`
+    // and refuses on err. Every spelling here decodes to the SAME valid
+    // signature bytes, so before the re-encode check each one opened the
+    // note and reported it verified -- one note, many byte-distinct
+    // spellings, which is the equivocation a witness protocol cannot
+    // tolerate.
+    const good = V.note.signed[0].msg as string
+    const line = good.slice(good.lastIndexOf('\n', good.length - 2) + 1)
+    const head = good.slice(0, good.length - line.length)
+    const b64 = line.slice(line.lastIndexOf(' ') + 1).replace(/\n$/, '')
+    const prefix = line.slice(0, line.length - b64.length - 1)
+
+    // The fixture itself must still open, or the loop below proves
+    // nothing about the spellings.
+    Assert.equal(openNote(good, known).verified.length, 1)
+
+    for (const bad of [
+      b64 + '!!!!',
+      b64.replace(/=+$/, ''),
+      b64.replace(/\+/g, '-').replace(/\//g, '_'),
+      b64.slice(0, 8) + ' ' + b64.slice(8),
+    ]) {
+      Assert.throws(() => openNote(head + prefix + ' ' + bad + '\n', known),
+        /malformed note/, JSON.stringify(bad))
+    }
+  })
+
+  test('a-verifier-key-whose-base64-is-not-canonical-is-refused', () => {
+    const vkey = V.note.verifierKey as string
+    const plus2 = vkey.lastIndexOf('+')
+    const head = vkey.slice(0, plus2 + 1)
+    const key64 = vkey.slice(plus2 + 1)
+    for (const bad of [key64 + '!!!!', ' ' + key64, key64.slice(0, 4) + ' ' + key64.slice(4)]) {
+      Assert.throws(() => parseVerifierKey(head + bad),
+        /malformed verifier id/, JSON.stringify(bad))
+    }
+    Assert.equal(parseVerifierKey(vkey).name, V.note.name)
+  })
+
+  test('a-name-is-scanned-with-gos-space-set-not-javascripts', () => {
+    // The two sets differ in BOTH directions, and `\s` was wrong both
+    // ways: U+0085 is a space to Go and not to JavaScript, so a name
+    // carrying one passed here and was refused upstream; U+FEFF is the
+    // reverse. Neither is reachable from the vectors, which is why the
+    // difference stood.
+    const key = V.note.verifierKey.slice(V.note.verifierKey.indexOf('+'))
+    for (const cp of [0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x20, 0x85, 0xa0,
+      0x1680, 0x2000, 0x200a, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000]) {
+      const name = 'x' + String.fromCodePoint(cp) + 'example'
+      Assert.throws(() => parseVerifierKey(name + key),
+        /malformed verifier id/, 'U+' + cp.toString(16))
+    }
+    // Not in Go's set, so not in ours: these reach the hash check and
+    // fail THERE, with a different message.
+    for (const cp of [0xfeff, 0x200b, 0x180e]) {
+      const name = 'x' + String.fromCodePoint(cp) + 'example'
+      Assert.throws(() => parseVerifierKey(name + key),
+        /invalid verifier hash/, 'U+' + cp.toString(16))
     }
   })
 
