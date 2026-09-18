@@ -6,6 +6,31 @@ module system. It is a TypeScript port of the verifying half of
 It verifies checkpoints and proofs already stored in a lockfile without
 requiring a running log.
 
+## Install
+
+```sh
+npm i @aontu/mod
+```
+
+CommonJS, with its own type declarations, on Node 22 or later. Nothing
+here fetches anything: every function takes the bytes it is given.
+
+```js
+const { recordHash, formatHash, c2spTilePath } = require('@aontu/mod')
+
+// A leaf hash, RFC 6962 domain-separated, and the tile path a client
+// would fetch to prove that leaf is in the log.
+const leaf = recordHash(new TextEncoder().encode('example.com/pkg@1.0.0'))
+
+formatHash(leaf)                         // '7vz+JwgrsLDHYWW4ntmQTZzs9K5A/AZHDJ6wNfCe3XY='
+c2spTilePath({ level: 0, index: 1234 })  // 'tile/0/x001/234'
+```
+
+Checking a pin is `checkRecord`, given the proof and the tree head a
+lockfile already holds; `openNote` and `parseTree` read the checkpoint
+those come from, and `verifyKeyProof` checks a key provider's signature
+over a manifest digest.
+
 ## Contents
 
 | Path | Purpose |

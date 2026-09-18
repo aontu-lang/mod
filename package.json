@@ -36,10 +36,10 @@
     "access": "public"
   },
   "files": [
-    "dist/*.js",
-    "dist/*.d.ts",
-    "dist/*.map",
-    "src",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.map",
+    "src/**/*.ts",
     "vectors",
     "PROOF-CONTRACT.md",
     "LICENSE",
