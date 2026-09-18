@@ -61,9 +61,16 @@ export function formatHash(h: Hash): string {
 // truncated hash that silently became a short array would compare
 // unequal to everything, which reads as a proof failure rather than as
 // the malformed input it is.
+//
+// THE RE-ENCODE IS THE REAL CHECK, not the length. Upstream reads
+// `data, err := base64.StdEncoding.DecodeString(s)` and refuses on
+// `err`; Buffer has no err -- it skips non-alphabet bytes, accepts
+// missing padding and accepts the base64url alphabet -- so the length
+// alone never fires and one hash has unboundedly many spellings.
+// Requiring the decode to round-trip gives it exactly one.
 export function parseHash(s: string): Hash {
   const b = Buffer.from(s, 'base64')
-  if (HASH_SIZE !== b.length) {
+  if (HASH_SIZE !== b.length || b.toString('base64') !== s) {
     throw new Error('tlog: malformed hash')
   }
   return new Uint8Array(b)

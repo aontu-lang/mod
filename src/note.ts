@@ -88,10 +88,11 @@ export function parseVerifierKey(vkey: string): Verifier {
     throw new Error('note: malformed verifier id')
   }
 
-  const encoded = new Uint8Array(Buffer.from(key64, 'base64'))
-  if (0 === encoded.length) {
+  const encodedBuf = canonicalBase64(key64)
+  if (undefined === encodedBuf) {
     throw new Error('note: malformed verifier id')
   }
+  const encoded = new Uint8Array(encodedBuf)
   if (ALG_ED25519 !== encoded[0] || 1 + 32 !== encoded.length) {
     throw new Error('note: unknown verifier algorithm')
   }
@@ -103,11 +104,46 @@ export function parseVerifierKey(vkey: string): Verifier {
 }
 
 
+// Base64 that decodes and re-encodes to itself, and to at least one
+// byte. Upstream refuses on the `err` its decoder returns; Buffer has
+// no err and silently accepts junk characters, missing padding and the
+// base64url alphabet, so without this a signature or a key has many
+// spellings that all open the same note. Empty decodes to empty, which
+// the length test then rejects.
+function canonicalBase64(text: string): Buffer | undefined {
+  const bytes = Buffer.from(text, 'base64')
+  return 0 < bytes.length && bytes.toString('base64') === text ? bytes : undefined
+}
+
+
 // A name may not be empty, hold whitespace, or hold `+` -- the last
 // because `+` is the field separator in a verifier key, so a name
 // containing one could spell a different key.
+//
+// THE SET IS GO'S `unicode.IsSpace`, WRITTEN OUT AS CODE POINTS,
+// because JavaScript's `\s` is a different set in both directions: it
+// omits U+0085, which Go treats as space, and includes U+FEFF, which Go
+// does not. Using `\s` let a name Go refuses through, and refused one
+// Go allows. Numbers rather than a character class so the table can be
+// read against unicode.IsSpace, and because U+2028 in a regex literal
+// is a line terminator that ends the literal.
+const GO_SPACE = new Set([
+  0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x20, 0x85, 0xa0,
+  0x1680, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000,
+])
+
+
 function isValidName(name: string): boolean {
-  return '' !== name && !/\s/.test(name) && !name.includes('+')
+  if ('' === name || name.includes('+')) {
+    return false
+  }
+  for (const ch of name) {
+    const c = ch.codePointAt(0) as number
+    if (GO_SPACE.has(c) || (0x2000 <= c && 0x200a >= c)) {
+      return false
+    }
+  }
+  return true
 }
 
 
@@ -186,10 +222,11 @@ export function openNote(msg: string, known: Verifier[]): Note {
     }
     const name = rest.slice(0, sp)
     const b64 = rest.slice(sp + 1)
-    const sig = new Uint8Array(Buffer.from(b64, 'base64'))
-    if (!isValidName(name) || '' === b64 || 5 > sig.length) {
+    const sigBuf = canonicalBase64(b64)
+    if (!isValidName(name) || undefined === sigBuf || 5 > sigBuf.length) {
       throw new Error('note: malformed note')
     }
+    const sig = new Uint8Array(sigBuf)
 
     const hash = Buffer.from(sig).readUInt32BE(0)
     const raw = sig.slice(4)

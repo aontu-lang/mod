@@ -67,13 +67,22 @@ export function signerId(publicKey: Uint8Array): string {
 
 // The public key a signer id names. Refuses anything but the exact
 // shape: a tampered id is refused here rather than silently failing to
-// match later. Forty-three base64url characters are exactly 32 bytes,
-// so the shape check is the length check.
+// match later.
+//
+// THE REGEX IS NOT THE WHOLE CHECK. Forty-three base64url characters
+// carry 258 bits and a key is 256, so the last character has two spare
+// bits the alphabet-and-length test does not constrain -- four ids
+// decode to one key, and three of them do not come back out of
+// signerId. canonicalBase64url is what makes the id exact, and is
+// already what verifyKeyProof holds the proof's own signer to.
 export function parseSignerId(id: string): Uint8Array {
-  if (!KEY_ID_RE.test(id)) {
+  const raw = KEY_ID_RE.test(id)
+    ? canonicalBase64url(id.slice('ed25519:'.length), 32)
+    : undefined
+  if (undefined === raw) {
     throw new Error('keyproof: malformed signer id')
   }
-  return new Uint8Array(Buffer.from(id.slice('ed25519:'.length), 'base64url'))
+  return new Uint8Array(raw)
 }
 
 
