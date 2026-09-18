@@ -48,16 +48,15 @@ over a manifest digest.
 
 The client verifies proofs; it does not construct them or sign checkpoints.
 The service implementation, including quotas and deployment, is in
-`aontu-lang/system`. Under
-[ADR-019](https://github.com/aontu-lang/aontu/blob/main/ADR.md) the log
-itself is federated to Sigstore's Rekor v2, so this package is the verifier
-for a log the project does not run. Client verification must remain
+`aontu-lang/system`. The log itself is federated to Sigstore's Rekor v2
+rather than run by the project, so this package is the verifier for a log
+nobody here operates -- which is why client verification has to remain
 independently buildable from public code.
 
 **The paths are C2SP `tlog-tiles`.** `c2spTilePath` and
 `parseC2spTilePath` address the tiles Rekor v2 serves
 (`tile/<L>/<N>[.p/<W>]`, `tile/entries/<N>`), which is where the log this
-package verifies lives under ADR-019. Go sumdb's own encoding
+package verifies lives. Go sumdb's own encoding
 (`tile/<H>/<L>/<N>`, level -1 as `data`) stays in `src/tile.ts` for the
 differential vectors and is not on the package surface.
 
