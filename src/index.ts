@@ -38,7 +38,10 @@ export type { KeyProof } from './keyproof'
 export { keyHash, parseVerifierKey, openNote, parseTree } from './note'
 export type { Verifier, Note, Tree } from './note'
 
-// The export block alone, which the emitted JavaScript wraps in
-// accessor definitions no test can drive -- ADR-002's standing
-// exclusion in the canonical port, for the same reason.
-/* node:coverage ignore next 3 */
+// A TRAILING LINE, DELIBERATELY. With nothing after the last
+// `export type` above, source-mapped coverage attributes two uncovered
+// lines to it -- an end-of-file artefact rather than a gap, since the
+// same run over dist/index.js without --enable-source-maps reports
+// 100 %. Any trailing content answers it, and this comment is it. A
+// `node:coverage ignore` directive would not: it skips the lines that
+// FOLLOW it, and the export accessors are all above.
