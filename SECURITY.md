@@ -8,14 +8,17 @@ not an ordinary bug.
 
 ## Supported versions
 
-There is nothing published: `@aontu/mod` has never been released to npm,
-so there is no version range to report against. Report against `main`,
-which is what the first release will ship.
+Report against `main`, or against the version you are running.
+`npm view @aontu/mod versions` lists what the registry holds; a fix
+ships in the next release, and there is no maintained older line to
+report against instead.
 
-No version is named here on purpose. This section named one until
-2026-09-18, and by then it named a version `package.json` had already
-moved past -- in a file that ships inside the tarball, so the stale
-claim would have been published with it.
+No version is named here on purpose, and this is the second correction
+the section has taken. It named a version until 2026-09-18, by which
+time `package.json` had moved past it. It then said nothing was
+published, which was true until the first release and false one second
+afterwards. This file ships inside the tarball, so a claim only the
+registry can settle does not belong in it.
 
 ## Reporting a vulnerability
 

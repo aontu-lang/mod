@@ -45,7 +45,8 @@
     "LICENSE",
     "LICENSES",
     "SECURITY.md",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "UPSTREAM_GO_MOD.md"
   ],
   "scripts": {
     "build": "tsc --build src test",
