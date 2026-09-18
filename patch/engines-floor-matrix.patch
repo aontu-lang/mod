@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude Opus 5 <noreply@anthropic.com>
+Date: Thu, 18 Sep 2026 18:00:00 +0000
+Subject: [PATCH] Test the engines floor instead of asserting it
+
+`package.json` declares `engines.node: ">=22"`, and the matrix ran
+`24.x` and `latest`, so the floor was never exercised. A floor CI does
+not run is a claim, and this package's whole posture is that a claim
+nothing checks goes stale: `>=24` stood unexamined until someone noticed
+the entire Node surface is three `node:crypto` imports present since
+Node 16, against a `target: es2021`.
+
+Adding `22.x` makes the lowest supported version the one the suite
+proves. It costs three more matrix cells.
+
+Apply with `git am` from a checkout whose token holds the `workflow`
+scope, and delete this file in the applying commit.
+---
+ .github/workflows/build.yml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.github/workflows/build.yml b/.github/workflows/build.yml
+index 1111111..2222222 100644
+--- a/.github/workflows/build.yml
++++ b/.github/workflows/build.yml
+@@ -15,7 +15,7 @@ jobs:
+       fail-fast: false
+       matrix:
+         os: [ubuntu-latest, macos-latest, windows-latest]
+-        node-version: [24.x, latest]
++        node-version: [22.x, 24.x, latest]
+     runs-on: ${{ matrix.os }}
+     steps:
+       - uses: actions/checkout@v4
+-- 
+2.43.0

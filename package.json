@@ -30,7 +30,7 @@
     "./package.json": "./package.json"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public"
@@ -50,7 +50,7 @@
   ],
   "scripts": {
     "build": "tsc --build src test",
-    "prepublishOnly": "npm run build",
+    "prepare": "npm run build",
     "pretest": "npm run build",
     "test": "node --enable-source-maps --test \"dist-test/**/*.test.js\"",
     "pretest-cov": "npm run build",

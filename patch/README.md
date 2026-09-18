@@ -12,4 +12,7 @@ add `--reset-author` to the amend below to take the commit as your own.
 
 ## Pending patches
 
-None.
+- **`engines-floor-matrix.patch`** — adds `22.x` to `build.yml`'s
+  `node-version` matrix, so the floor `package.json` declares is the
+  lowest version CI actually runs. Nothing depends on it; apply it
+  whenever.
