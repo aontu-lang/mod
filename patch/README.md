@@ -22,5 +22,11 @@ add `--reset-author` to the amend below to take the commit as your own.
   release instead. **Apply before the first release** if the
   attestation is meant to be a guarantee rather than a default.
 
-Both apply with `git am --3way` against `main` and are independent of
-each other.
+- **`npm-pin.patch`** — replaces `npm install -g npm@latest` in
+  `publish.yml` with `npm@^11.5.1`. The job that floats onto whatever
+  npm shipped that morning is the one holding the publish credential,
+  and the upgrade is not needed for its stated reason: Node 24.x already
+  bundles an npm above the trusted-publishing floor.
+
+All three apply with `git am --3way` against `main`, in any order and
+independently of each other; that is checked, not assumed.

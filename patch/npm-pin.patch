@@ -1,0 +1,45 @@
+From 9e91657056a0b009b27e36e3eb03d5fba88d8e55 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 18 Sep 2026 18:45:00 +0000
+Subject: [PATCH] Pin the npm that runs the publish instead of floating it
+
+`npm install -g npm@latest` resolves to whatever npm published most
+recently, on a job that holds the OIDC credential and uploads the
+tarball. Today that is npm 12, a major the release path has never been
+run on; tomorrow it is whatever lands next. The upgrade is not even
+needed for the stated reason: setup-node pins node-version 24.x, whose
+bundled npm is 11.19.0, and trusted publishing requires 11.5.1 or
+later.
+
+`^11.5.1` keeps the floor the step exists to state, resolves inside the
+major the release has been run on, and cannot cross into a new one on
+release day. The concrete failure this avoids is not hypothetical:
+npm 12's engines are `^22.22.2 || ^24.15.0 || >=26.0.0`, so a later
+major raising its Node floor past whatever `24.x` resolves to would
+make the upgrade step itself fail and block the release.
+
+Remove patch/npm-pin.patch and its row in patch/README.md in the
+commit that applies this.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01W4X2MprZjtGPiBVth8jTrW
+---
+ .github/workflows/publish.yml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.github/workflows/publish.yml b/.github/workflows/publish.yml
+index 66a5b22..d5ed08a 100644
+--- a/.github/workflows/publish.yml
++++ b/.github/workflows/publish.yml
+@@ -103,7 +103,7 @@ jobs:
+       - run: npm run test-cov-check
+ 
+       - name: Use a trusted-publishing capable npm
+-        run: npm install -g npm@latest
++        run: npm install -g 'npm@^11.5.1'
+ 
+       - name: Is this version already on npm?
+         id: registry
+-- 
+2.43.0
+
