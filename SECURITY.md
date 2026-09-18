@@ -8,9 +8,14 @@ not an ordinary bug.
 
 ## Supported versions
 
-There is nothing published. `0.1.0` has never been released to npm, so
-there is no version range to report against: report against `main`,
+There is nothing published: `@aontu/mod` has never been released to npm,
+so there is no version range to report against. Report against `main`,
 which is what the first release will ship.
+
+No version is named here on purpose. This section named one until
+2026-09-18, and by then it named a version `package.json` had already
+moved past -- in a file that ships inside the tarball, so the stale
+claim would have been published with it.
 
 ## Reporting a vulnerability
 
