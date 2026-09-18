@@ -17,8 +17,9 @@ requiring a running log.
 | `src/c2sp.ts` | C2SP `tlog-tiles` paths, the shape Rekor v2 serves |
 | `src/note.ts` | Checkpoint key IDs, Ed25519 verification, and tree heads |
 | `src/keyproof.ts` | The key provider's proof over a manifest digest ([PROOF-CONTRACT.md](PROOF-CONTRACT.md)) |
-| `goref/` | Go program that generates vectors using the pinned upstream code |
+| `goref/` | Go program that generates vectors using the pinned upstream code (repository only) |
 | `vectors/` | Committed test vectors |
+| `src/index.ts` | The package surface: what is exported, and what deliberately is not |
 
 The client verifies proofs; it does not construct them or sign checkpoints.
 The service implementation, including quotas and deployment, is in
@@ -43,11 +44,16 @@ the Sigstore encoding will verify, is [PROOF-CONTRACT.md](PROOF-CONTRACT.md).
 
 **Releases** publish over OIDC trusted publishing by dispatching
 `publish.yml` from `main`, or on a pushed `v*` tag, which publishes
-without tagging; nothing publishes over a token. A maintainer registers
-the trusted publisher on npmjs.com before the first release
-(`docs/manual-tasks.md` §2 in `aontu-lang/system`).
+without tagging. Every release carries a provenance attestation, which
+npm generates for an OIDC publish and for nothing else; `npm audit
+signatures` in a project that installs this package checks it.
 
 ## Verify the port
+
+From a clone of [the repository](https://github.com/aontu-lang/mod) —
+the published package carries `src/` and the vectors so the port can be
+READ, but not the lockfile, the test suite or `goref/`, so it cannot be
+re-derived from the tarball:
 
 ```sh
 npm ci            # install the build toolchain
@@ -60,8 +66,9 @@ vendor directory, so the pinned `golang.org/x/mod` is fetched on each
 run. Running `npm test` on its own verifies the port against the
 committed vectors and needs neither.
 
-The suite includes valid and invalid proofs. Invalid-proof cases check that
-the verifier refuses malformed or inconsistent input; see `test/vectors.test.ts`.
+The suite includes valid and invalid proofs. Invalid-proof cases check
+that the verifier refuses malformed or inconsistent input; see the
+repository's `test/vectors.test.ts`.
 
 Read [UPSTREAM_GO_MOD.md](UPSTREAM_GO_MOD.md) before changing `src/`.
 For prose changes, follow the

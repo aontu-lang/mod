@@ -13,13 +13,6 @@ Report against `main`, or against the version you are running.
 ships in the next release, and there is no maintained older line to
 report against instead.
 
-No version is named here on purpose, and this is the second correction
-the section has taken. It named a version until 2026-09-18, by which
-time `package.json` had moved past it. It then said nothing was
-published, which was true until the first release and false one second
-afterwards. This file ships inside the tarball, so a claim only the
-registry can settle does not belong in it.
-
 ## Reporting a vulnerability
 
 **Do not open a public issue for an exploitable defect.** Use GitHub's
@@ -31,8 +24,8 @@ project's advisories are published:
 A report is most useful as a failing case: the bytes (checkpoint, note,
 tile or proof), the call that accepted them, and what upstream
 `golang.org/x/mod/sumdb/tlog` does with the same input. The vectors in
-`vectors/tlog.json` and the refusals in `test/guards.test.ts` show the
-shape of one.
+`vectors/tlog.json`, which ship with the package, and the refusals in
+the repository's `test/guards.test.ts` show the shape of one.
 
 ## Scope: acceptance is the surface
 

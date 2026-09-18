@@ -30,7 +30,7 @@ export { C2SP_TILE_HEIGHT, c2spTilePath, parseC2spTilePath } from './c2sp'
 export type { C2spTile } from './c2sp'
 
 // The key provider's proof, under the contract of ADR-024
-// (PROOF-CONTRACT.md).
+// (../PROOF-CONTRACT.md).
 export { SIGNATURE_ENCODING, signedBytes, signerId, parseSignerId, verifyKeyProof, smallOrderKey }
   from './keyproof'
 export type { KeyProof } from './keyproof'
