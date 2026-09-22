@@ -16,7 +16,7 @@ Three clauses, in order, for every package acquired from a repository:
    against the archive before the signature is looked at.
 2. **That the client's trust configuration accepts that identity for
    the package's name.** The `repo.trust` block of the consumer's
-   `pkg.aon` maps a pattern (`corp.example/*`) to a signer and an
+   `pkg.aontu` maps a pattern (`corp.example/*`) to a signer and an
    inclusion requirement. A proof by a signer the entry does not name is
    refused before a byte of the archive is read.
 3. **Where the entry requires it, inclusion of the signed manifest in a
