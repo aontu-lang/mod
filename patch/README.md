@@ -12,17 +12,11 @@ add `--reset-author` to the amend below to take the commit as your own.
 
 ## Pending patches
 
-- **`provenance-explicit.patch`** — passes `--provenance` to the
-  `npm publish` in `publish.yml`. npm's own auto-enable is conditional
-  and fails quietly; the flag makes a missing attestation fail the
-  release instead. **Apply before the first release** if the
-  attestation is meant to be a guarantee rather than a default.
-
 - **`npm-pin.patch`** — replaces `npm install -g npm@latest` in
   `publish.yml` with `npm@^11.5.1`. The job that floats onto whatever
   npm shipped that morning is the one holding the publish credential,
   and the upgrade is not needed for its stated reason: Node 24.x already
   bundles an npm above the trusted-publishing floor.
 
-Both apply with `git am --3way` against `main`, in either order and
-independently of each other; that is checked, not assumed.
+It applies with `git am --3way` against `main`; that is checked, not
+assumed.
