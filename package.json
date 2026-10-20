@@ -50,13 +50,9 @@
   ],
   "scripts": {
     "build": "tsc --build src test",
-    "prepare": "npm run build",
-    "pretest": "npm run build",
-    "test": "node --enable-source-maps --test \"dist-test/**/*.test.js\"",
-    "pretest-cov": "npm run build",
-    "test-cov": "node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test \"dist-test/**/*.test.js\"",
-    "pretest-cov-check": "npm run build",
-    "test-cov-check": "node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test \"dist-test/**/*.test.js\"",
+    "test": "npm run build && node --enable-source-maps --test \"dist-test/**/*.test.js\"",
+    "test-cov": "npm run build && node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test \"dist-test/**/*.test.js\"",
+    "test-cov-check": "npm run build && node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test \"dist-test/**/*.test.js\"",
     "vectors": "cd goref && go run . > ../vectors/tlog.json",
     "clean": "rm -rf dist dist-test node_modules"
   },
