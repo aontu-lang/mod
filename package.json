@@ -1,6 +1,6 @@
 {
   "name": "@aontu/mod",
-  "version": "0.2.0",
+  "version": "0.0.1",
   "description": "The client half of the aontu package system's proof contract: a transparency-log verifier ported from golang.org/x/mod/sumdb/tlog and held to it by golden vectors, with C2SP tlog-tiles addressing and the key provider's proof beside it.",
   "license": "MIT AND BSD-3-Clause",
   "author": "Richard Rodger (https://richardrodger.com)",
@@ -61,7 +61,7 @@
     "clean": "rm -rf dist dist-test node_modules"
   },
   "devDependencies": {
-    "@types/node": "26.2.0",
+    "@types/node": "26.6.5",
     "typescript": "7.0.2"
   }
 }
