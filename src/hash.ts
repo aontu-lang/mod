@@ -1,25 +1,12 @@
 /* Copyright (c) 2026 aontu-lang, MIT License */
 
-// Derived from golang.org/x/mod/sumdb/tlog (tlog.go).
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style licence; see
-// LICENSES/BSD-3-Clause-Go.txt and THIRD_PARTY_NOTICES.md.
-//
-// LEAF AND NODE HASHING, with the domain separation RFC 6962 specifies
-// and Go's checksum database implements: a leaf is hashed under a 0x00
-// prefix and an interior node under 0x01, so no leaf encoding can ever
-// be mistaken for a node encoding. Removing that prefix byte -- or
-// applying it to the wrong one -- is the classic second-preimage hole
-// in a Merkle tree, and it is why these two functions are three lines
-// each and still have their own file.
+// Copyright 2019 The Go Authors. All rights reserved. Derived from golang.org/x/mod/sumdb/tlog (tlog.go); use of this source code is governed by a BSD-style licence, see LICENSES/BSD-3-Clause-Go.txt and THIRD_PARTY_NOTICES.md.
+
+// Why the prefixes matter: docs/contributing/verifier.md, "Hashing".
 
 import { createHash } from 'node:crypto'
 
 
-// A hash is 32 bytes, always. Modelled as a Uint8Array rather than a
-// string because every use is byte concatenation, and a base64 string
-// that has to be decoded before every node hash is a decode step to get
-// wrong. `formatHash`/`parseHash` are the boundary.
 export const HASH_SIZE = 32
 
 export type Hash = Uint8Array
@@ -47,27 +34,14 @@ export function nodeHash(left: Hash, right: Hash): Hash {
 const LEAF_PREFIX = new Uint8Array([0x00])
 
 
-// The base64 form upstream prints and the tile protocol carries.
-// STANDARD base64 with padding, matching Go's Hash.String() -- not
-// base64url, which is what the canon-hash uses. Two encodings live in
-// this ecosystem and confusing them produces a string that looks right
-// and compares wrong.
+// Standard base64 with padding, as Go's Hash.String() writes it: not base64url.
 export function formatHash(h: Hash): string {
   return Buffer.from(h).toString('base64')
 }
 
 
-// The inverse, refusing anything that is not exactly 32 bytes. A
-// truncated hash that silently became a short array would compare
-// unequal to everything, which reads as a proof failure rather than as
-// the malformed input it is.
-//
-// THE RE-ENCODE IS THE REAL CHECK, not the length. Upstream reads
-// `data, err := base64.StdEncoding.DecodeString(s)` and refuses on
-// `err`; Buffer has no err -- it skips non-alphabet bytes, accepts
-// missing padding and accepts the base64url alphabet -- so the length
-// alone never fires and one hash has unboundedly many spellings.
-// Requiring the decode to round-trip gives it exactly one.
+// The re-encode is the real check: Buffer decodes junk, missing padding and
+// base64url without complaint, so only the round trip gives a hash one spelling.
 export function parseHash(s: string): Hash {
   const b = Buffer.from(s, 'base64')
   if (HASH_SIZE !== b.length || b.toString('base64') !== s) {
@@ -77,11 +51,6 @@ export function parseHash(s: string): Hash {
 }
 
 
-// Constant-time-ish equality. Not a secret comparison -- these are
-// public hashes and a timing side channel reveals nothing an attacker
-// does not already hold -- but written without an early return anyway,
-// because a hash comparison that short-circuits is the shape a reviewer
-// has to think about, and this way they do not.
 export function hashEqual(a: Hash, b: Hash): boolean {
   if (a.length !== b.length) {
     return false

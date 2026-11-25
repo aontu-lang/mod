@@ -1,9 +1,6 @@
 /* Copyright (c) 2026 aontu-lang, MIT License */
 
-// THE KEY PROVIDER'S PROOF, verified against signatures made here with
-// node's own Ed25519: the port has no signer, so the test is the
-// signer. As with the tlog vectors, the refusals are the point: a
-// verifier whose failure mode is "holds" passes every positive case.
+// The port has no signer, so these tests sign with Node's own Ed25519.
 
 import { describe, test } from 'node:test'
 import * as Assert from 'node:assert'
@@ -59,11 +56,7 @@ describe('keyproof', () => {
 
 
   test('a-signer-id-with-non-zero-spare-bits-is-refused', () => {
-    // FORTY-THREE BASE64URL CHARACTERS CARRY 258 BITS AND A KEY IS 256,
-    // so the final character has two bits the alphabet-and-length test
-    // does not constrain: four ids decode to one key, and three of them
-    // do not come back out of signerId. The regex alone accepted all
-    // four, which made parseSignerId disagree with its own inverse.
+    // The last character has spare bits: each setting decodes to the same key.
     const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
     const k = keypair()
     const body = k.id.slice('ed25519:'.length)
@@ -92,18 +85,15 @@ describe('keyproof', () => {
     const { proof, id } = proofOver(DIGEST)
     const other = keypair()
 
-    // Not a key proof at all.
     for (const bad of [null, undefined, 1, {}, { ...proof, kind: 'sigstore' },
       { ...proof, encoding: 'aontu-signature/v2' }, { ...proof, signature: 5 },
       { ...proof, signer: 'forge' }, (({ signer, ...rest }) => rest)(proof)]) {
       Assert.match(verifyKeyProof(bad, DIGEST, id) as string, /not an aontu-signature\/v1 key proof/)
     }
-    // Signs another digest, or the digest asked for is not a digest.
     Assert.equal(verifyKeyProof(proof, OTHER, id),
       'the proof signs ' + DIGEST + ', not this manifest')
     Assert.equal(verifyKeyProof({ ...proof, over: 'nope' }, 'nope', id),
       'the proof signs nope, not this manifest')
-    // Signed by a key the trust entry does not accept.
     Assert.equal(verifyKeyProof(proof, DIGEST, other.id),
       'signed by ' + id + '; the trust entry accepts ' + other.id)
     // A signature of the wrong length, or a key of the wrong length.

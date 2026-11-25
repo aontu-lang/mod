@@ -1,19 +1,7 @@
 // Copyright (c) 2026 aontu-lang, MIT License.
-//
-// THE REFERENCE VECTOR GENERATOR. This program imports the PINNED
-// upstream `golang.org/x/mod/sumdb/tlog` and emits golden vectors that
-// the TypeScript port in ../src must reproduce byte for byte.
-//
-// It exists because a cryptographic port must not be accepted merely
-// because its own unit tests pass: a test written by whoever wrote the
-// code proves the code agrees with its author, not with the protocol.
-// The vectors here are produced by the implementation Go's own checksum
-// database runs, so a TypeScript disagreement is a TypeScript bug.
-//
-// The corpus is deterministic by construction -- record i is the bytes
-// of "record <i>" -- so re-running this program on the same pinned
-// upstream yields byte-identical output, and `make vectors` is a
-// no-op unless the pin moves. See ../UPSTREAM_GO_MOD.md.
+
+// Command goref writes the golden vectors from the pinned upstream; its
+// output must not vary between runs. See docs/contributing/verifier.md.
 package main
 
 import (
@@ -29,15 +17,12 @@ import (
 	"golang.org/x/mod/sumdb/tlog"
 )
 
-// The corpus. Deterministic, and varied in length so a length-sensitive
-// encoding bug in the port cannot hide behind fixed-width records.
+// Varied in length, so a length-sensitive bug cannot hide behind fixed widths.
 func record(i int64) []byte {
 	return []byte(fmt.Sprintf("record %d", i))
 }
 
-// storage is the dense stored-hash array tlog addresses by
-// StoredHashIndex, built by appending each record's stored hashes in
-// order -- the same shape a real log's hash storage has.
+// storage is the dense stored-hash array tlog addresses by StoredHashIndex.
 type storage []tlog.Hash
 
 func (s storage) ReadHashes(indexes []int64) ([]tlog.Hash, error) {
@@ -54,9 +39,7 @@ func (s storage) ReadHashes(indexes []int64) ([]tlog.Hash, error) {
 func b64(h tlog.Hash) string { return base64.StdEncoding.EncodeToString(h[:]) }
 
 func b64s(hs []tlog.Hash) []string {
-	// Never nil: an empty proof is a REAL case (a one-record tree, and
-	// the n==t consistency proof), and `null` versus `[]` is exactly the
-	// kind of difference a JSON round-trip would hide.
+	// Never nil: an empty proof is a real case, and must encode as [].
 	out := []string{}
 	for _, h := range hs {
 		out = append(out, b64(h))
@@ -65,16 +48,10 @@ func b64s(hs []tlog.Hash) []string {
 }
 
 type vectors struct {
-	// What produced this file, so a stale vector set is visible rather
-	// than merely wrong.
 	Upstream string `json:"upstream"`
 	Corpus   string `json:"corpus"`
 
-	// The dense stored-hash array itself, so the port's treeHash is
-	// checked against UPSTREAM's stored hashes rather than against a
-	// second implementation of the append side -- which the client half
-	// deliberately does not have, and which would let a pair of matching
-	// errors cancel out.
+	// Upstream's own array, so the port needs no append side to check treeHash.
 	StoredHashes []string `json:"storedHashes"`
 
 	RecordHash      []recordHashCase      `json:"recordHash"`
@@ -117,8 +94,6 @@ type treeHashCase struct {
 }
 
 type checkRecordCase struct {
-	// `want` false is as much of the contract as `want` true: a verifier
-	// that accepts everything passes every positive vector.
 	Name  string   `json:"name"`
 	T     int64    `json:"t"`
 	Th    string   `json:"th"`
@@ -138,10 +113,6 @@ type checkTreeCase struct {
 	Want  bool     `json:"want"`
 }
 
-// The signed-note vectors. Generated with a FIXED Ed25519 seed so the
-// key, its 32-bit hash and every signature below are reproducible: a
-// generator that minted a fresh key each run would emit a different
-// file every time and the diff would carry no information.
 type noteVectors struct {
 	Seed        string          `json:"seed"`
 	VerifierKey string          `json:"verifierKey"`
@@ -189,17 +160,12 @@ type tileForIndexCase struct {
 	Path  string `json:"path"`
 }
 
-// The tree sizes every size-indexed family is generated over. Chosen
-// for shape, not for roundness: 1 and 2 are the degenerate trees, 3 5 6
-// 7 are the ragged ones where maxpow2 splits unevenly, 8 and 16 are
-// perfect, and 13 = 8+4+1 is the frontier example the design document
-// uses. 100 and 1000 reach past a single tile at height 8 and 2.
+// Chosen for shape: degenerate, ragged, perfect, and past a single tile.
 var sizes = []int64{1, 2, 3, 4, 5, 6, 7, 8, 11, 13, 16, 17, 100, 1000}
 
 func main() {
 	const maxN = 1000
 
-	// Build the stored-hash array and remember each record's leaf hash.
 	var store storage
 	leaf := make([]tlog.Hash, 0, maxN)
 	for i := int64(0); i < maxN; i++ {
@@ -225,8 +191,7 @@ func main() {
 			Hash: b64(tlog.RecordHash(record(i))),
 		})
 	}
-	// The empty record: a real input, and the one a "prepend 0x00 then
-	// hash" port is most likely to get wrong by hashing nothing at all.
+	// The empty record still hashes the leaf prefix.
 	v.RecordHash = append(v.RecordHash, recordHashCase{
 		Data: "",
 		Hash: b64(tlog.RecordHash(nil)),
@@ -248,12 +213,7 @@ func main() {
 			})
 		}
 	}
-	// PAST 32 BITS. These are the values a direct transliteration of
-	// upstream into JavaScript gets wrong: `<<` and `>>` coerce to 32
-	// bits there, so an index beyond 2^31 wraps. Generated rather than
-	// transcribed, because a hand-written expectation for arithmetic
-	// this size is a guess -- and the first draft of the port's own test
-	// guessed one of them wrong.
+	// Past 2^31, where a JavaScript bitwise operator would wrap.
 	for _, big := range []int64{1 << 31, 1 << 32, 1 << 40} {
 		for level := 0; level < 3; level++ {
 			v.StoredHashIndex = append(v.StoredHashIndex, storedHashIndexCase{
@@ -295,9 +255,7 @@ func main() {
 			}
 			add(fmt.Sprintf("t=%d n=%d", t, n), t, th, n, leaf[n], p)
 
-			// NEGATIVES. A verifier that returns true unconditionally
-			// passes every positive vector above, so the rejections are
-			// the half that actually pins the algorithm.
+			// The rejections are what pin the algorithm.
 			if len(p) > 0 {
 				// One sibling hash corrupted.
 				bad := append(tlog.RecordProof{}, p...)
@@ -384,9 +342,7 @@ func main() {
 	}
 }
 
-// interesting is the record indices worth proving in a tree of size t:
-// the ends, the middle, and the two either side of the maxpow2 split
-// where the proof recursion changes direction.
+// interesting is the ends, the middle, and either side of the maxpow2 split.
 func interesting(t int64) []int64 {
 	set := map[int64]bool{0: true, t - 1: true, t / 2: true}
 	k := int64(1)
@@ -416,9 +372,7 @@ func mustRoot(store storage, n int64) tlog.Hash {
 	return h
 }
 
-// flip inverts one bit, which is the smallest corruption that must be
-// caught -- a verifier that compares prefixes, or lengths, passes a
-// wholesale replacement and fails this.
+// flip inverts one bit: the smallest corruption a verifier must catch.
 func flip(h tlog.Hash) tlog.Hash {
 	h[0] ^= 0x01
 	return h
@@ -429,8 +383,7 @@ func fatal(err error) {
 	os.Exit(1)
 }
 
-// A fixed 32-byte Ed25519 seed. Test material, published deliberately:
-// the point of a vector file is that anyone can re-derive it.
+// Public test material, so that anyone can re-derive the vectors.
 const noteSeed = "0123456789abcdef0123456789abcdef"
 
 const noteName = "aontu.example/transparency"
@@ -439,9 +392,7 @@ func noteVectorsFor(roots map[int64]tlog.Hash) noteVectors {
 	priv := ed25519.NewKeyFromSeed([]byte(noteSeed))
 	pub := priv.Public().(ed25519.PublicKey)
 
-	// The encoded key is alg-byte || key, and the id hash covers BOTH --
-	// hashing the bare key is the classic error, so the vector pins the
-	// hash the real construction produces.
+	// The key hash covers the algorithm byte as well as the key.
 	encoded := append([]byte{1}, pub...)
 	h := sha256.Sum256(append(append([]byte(noteName), '\n'), encoded...))
 	kh := binary.BigEndian.Uint32(h[:])
@@ -473,9 +424,7 @@ func noteVectorsFor(roots map[int64]tlog.Hash) noteVectors {
 	sign("multi-line", "line one\nline two\nline three\n")
 	sign("utf8", "café — ☃\n")
 
-	// A signature over DIFFERENT text, re-attached: the note is
-	// well-formed and the key is known, so a verifier that merely parses
-	// accepts it. Must be refused.
+	// Well-formed, known key, signature over other text: refused.
 	tampered := out.Signed[0]
 	out.Signed = append(out.Signed, noteCase{
 		Name: "text-tampered",
@@ -491,17 +440,14 @@ func noteVectorsFor(roots map[int64]tlog.Hash) noteVectors {
 			Text: text, Origin: noteName, N: n, Hash: b64(roots[n]), Want: true,
 		})
 	}
-	// Spellings that parse as a number and must still be refused,
-	// because a checkpoint is compared as TEXT and one tree size must
-	// have exactly one spelling.
+	// Each parses as a number; a tree size has one spelling.
 	for _, bad := range []string{"007", "+7", " 7", "7 ", "1e3", ""} {
 		text := fmt.Sprintf("%s\n%s\n%s\n", noteName, bad, b64(roots[13]))
 		out.Trees = append(out.Trees, treeNoteCase{
 			Text: text, Origin: noteName, Want: false,
 		})
 	}
-	// A wrong origin line is a different log, not a malformed one, and
-	// must not be accepted under this log's name.
+	// A wrong origin is another log.
 	out.Trees = append(out.Trees, treeNoteCase{
 		Text:   fmt.Sprintf("other.example\n13\n%s\n", b64(roots[13])),
 		Origin: noteName, Want: false,

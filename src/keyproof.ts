@@ -1,25 +1,12 @@
 /* Copyright (c) 2026 aontu-lang, MIT License */
 
-// THE KEY PROVIDER'S PROOF (ADR-024 part 4, ADR-039 part 10): a
-// signature over a manifest's digest by a named Ed25519 key. It is the
-// minimal provider under the proof contract -- what a local registry
-// serves and what a private package carries -- and the one encoding
-// this package verifies today; the Sigstore bundle is the other, and
-// is refused by name until its verifier exists.
-//
-//   message   = "aontu-signature/v1\n" + <digest> + "\n"
-//   signer    = "ed25519:" + base64url(the 32-byte public key)
-//   signature = base64url(the 64-byte Ed25519 signature)
-//
-// ONLY VERIFICATION IS HERE, as in note.ts: signing lives with whoever
-// holds the key, and `aontu pkg keygen` mints it.
+// The key provider's proof, encoded as PROOF-CONTRACT.md states.
 
 import { createPublicKey, verify as cryptoVerify } from 'node:crypto'
 
 
 export const SIGNATURE_ENCODING = 'aontu-signature/v1'
 
-// The proof object, as <version>.sig serves it.
 export type KeyProof = {
   kind: 'key'
   encoding: typeof SIGNATURE_ENCODING
@@ -32,9 +19,7 @@ const KEY_ID_RE = /^ed25519:[A-Za-z0-9_-]{43}$/
 const SIG_RE = /^[A-Za-z0-9_-]{86}$/
 const DIGEST_RE = /^sha256:[0-9a-f]{64}$/
 
-// The small-order points of the curve, by y with the sign bit cleared:
-// a signature under one verifies for any message. The last entry is p,
-// and every encoding at or above it is not canonical.
+// Small-order points by y, sign bit cleared; the last is p, the first non-canonical y.
 const SMALL_ORDER_Y = new Set([
   '0000000000000000000000000000000000000000000000000000000000000000',
   '0100000000000000000000000000000000000000000000000000000000000000',
@@ -43,20 +28,15 @@ const SMALL_ORDER_Y = new Set([
   'ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f',
 ])
 
-// Node has no raw-Ed25519 key import, so the 32 key bytes are wrapped
-// in the fixed SPKI DER prefix for id-Ed25519 (RFC 8410).
+// Node has no raw Ed25519 key import: this prefix wraps a key as SPKI DER.
 const SPKI_ED25519_PREFIX = Buffer.from('302a300506032b6570032100', 'hex')
 
 
-// The bytes a key proof signs: the encoding name, the digest, each
-// followed by a newline, so a signature over one digest cannot be
-// replayed as a signature over a prefix of another.
 export function signedBytes(over: string): Uint8Array {
   return new Uint8Array(Buffer.from(SIGNATURE_ENCODING + '\n' + over + '\n', 'utf8'))
 }
 
 
-// The signer id of a public key: what a trust entry names.
 export function signerId(publicKey: Uint8Array): string {
   if (32 !== publicKey.length) {
     throw new Error('keyproof: an Ed25519 public key is 32 bytes, not ' + publicKey.length)
@@ -65,16 +45,8 @@ export function signerId(publicKey: Uint8Array): string {
 }
 
 
-// The public key a signer id names. Refuses anything but the exact
-// shape: a tampered id is refused here rather than silently failing to
-// match later.
-//
-// THE REGEX IS NOT THE WHOLE CHECK. Forty-three base64url characters
-// carry 258 bits and a key is 256, so the last character has two spare
-// bits the alphabet-and-length test does not constrain -- four ids
-// decode to one key, and three of them do not come back out of
-// signerId. canonicalBase64url is what makes the id exact, and is
-// already what verifyKeyProof holds the proof's own signer to.
+// The regex leaves the last character's spare bits free; the re-encode in
+// canonicalBase64url is what gives one key one id.
 export function parseSignerId(id: string): Uint8Array {
   const raw = KEY_ID_RE.test(id)
     ? canonicalBase64url(id.slice('ed25519:'.length), 32)
@@ -86,8 +58,7 @@ export function parseSignerId(id: string): Uint8Array {
 }
 
 
-// A public key no signature should be accepted under: one of the eight
-// small-order points, or an encoding that is not canonical.
+// A small-order point, or a non-canonical encoding: any signature verifies.
 export function smallOrderKey(publicKey: Uint8Array): boolean {
   const y = Buffer.from(publicKey)
   y[31] &= 0x7f
@@ -96,18 +67,14 @@ export function smallOrderKey(publicKey: Uint8Array): boolean {
 }
 
 
-// Base64url that decodes and re-encodes to itself: Buffer drops
-// trailing bits silently, so a signature has one spelling here.
+// Buffer ignores spare trailing bits, so only the re-encode gives one spelling.
 function canonicalBase64url(text: string, length: number): Buffer | undefined {
   const bytes = Buffer.from(text, 'base64url')
   return length === bytes.length && bytes.toString('base64url') === text ? bytes : undefined
 }
 
 
-// Verify a key proof against the digest it must sign and the signer the
-// trust entry accepts. Answers the reason it does not hold, or
-// undefined when it does. Every path that is not a completed,
-// signer-matching, digest-matching verification is a refusal.
+// The reason the proof does not hold, or undefined when it does.
 export function verifyKeyProof(
   proof: unknown, over: string, signer: string,
 ): string | undefined {

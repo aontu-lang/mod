@@ -1,20 +1,7 @@
 /* Copyright (c) 2026 aontu-lang, MIT License */
 
-// THE DIFFERENTIAL GATE. Every case here was produced by running the
-// PINNED upstream `golang.org/x/mod/sumdb/tlog` (see ../goref), so a
-// disagreement is a bug in this port and not a difference of opinion.
-//
-// This file is the reason the port is allowed to exist at all. A
-// cryptographic implementation that passes only tests written by
-// whoever wrote it has been checked against its author's understanding,
-// which is exactly the thing in doubt. The vectors check it against the
-// implementation Go's own checksum database runs.
-//
-// THE REJECTIONS ARE THE POINT. 214 of the 268 inclusion cases and 160
-// of the 200 consistency cases expect `false`. A verifier that returned
-// true unconditionally would pass every positive case in this file and
-// fail 374 others, which is the asymmetry a proof checker's test suite
-// has to have.
+// Every expectation here came from the pinned upstream, by goref/main.go:
+// a disagreement is a defect in the port. See docs/contributing/verifier.md.
 
 import { describe, test } from 'node:test'
 import * as Assert from 'node:assert'
@@ -29,7 +16,7 @@ import {
   keyHash, parseVerifierKey, openNote, parseTree,
 } from '../dist/index'
 
-// The path functions are not on the 0.1.0 public surface.
+// The sumdb path functions are not exported from the package.
 import { tilePath, parseTilePath } from '../dist/tile'
 
 
@@ -72,22 +59,13 @@ const V: Vectors = JSON.parse(Fs.readFileSync(
   Path.join(__dirname, '..', 'vectors', 'tlog.json'), 'utf8'))
 
 
-// The corpus the vectors were generated over, reproduced here. If this
-// disagrees with goref/main.go the vectors are being read against the
-// wrong records, and every hash case below fails -- which is the
-// intended failure, loudly, rather than a silent re-baseline.
+// Must match `record` in goref/main.go.
 function record(i: number): Uint8Array {
   return new TextEncoder().encode('record ' + i)
 }
 
 
-// The dense stored-hash array AS UPSTREAM BUILT IT. Shipped in the
-// vectors rather than reconstructed here, deliberately: reconstructing
-// it would mean implementing the append side, which the client half
-// does not have and must not grow, and a re-implementation could carry
-// an error that cancelled against a matching one in `storedHashIndex`.
-// Read from upstream's array, `treeHash` is checked against upstream's
-// roots over upstream's hashes, and only the tree walk is under test.
+// Upstream's own stored-hash array, so only the tree walk is under test.
 const STORE: Uint8Array[] = V.storedHashes.map(parseHash)
 
 const reader = (indexes: number[]): Uint8Array[] =>
@@ -103,9 +81,7 @@ const reader = (indexes: number[]): Uint8Array[] =>
 describe('vectors', () => {
 
   test('the-vector-file-names-its-upstream', () => {
-    // A vector set that does not say what produced it cannot be
-    // re-derived, and a stale one would be indistinguishable from a
-    // fresh one. UPSTREAM_GO_MOD.md carries the same string.
+    // UPSTREAM_GO_MOD.md names the same pin.
     Assert.equal(V.upstream, 'golang.org/x/mod@v0.32.0 sumdb/tlog')
     Assert.ok(0 < V.corpus.length)
   })
@@ -118,10 +94,7 @@ describe('vectors', () => {
       Assert.equal(formatHash(recordHash(data)), c.hash,
         'recordHash of ' + JSON.stringify(c.data))
     }
-    // And the corpus itself agrees: record 0's leaf hash is the first
-    // entry of upstream's stored-hash array, which ties the records
-    // this file builds to the array the vectors carry. Without this the
-    // two halves could describe different logs and every test still pass.
+    // Ties this file's records to the array the vectors carry.
     Assert.equal(formatHash(recordHash(record(0))), V.storedHashes[0])
   })
 
@@ -140,10 +113,7 @@ describe('vectors', () => {
     for (const c of V.storedHashIndex) {
       Assert.equal(storedHashIndex(c.level, c.n), c.index,
         'storedHashIndex(' + c.level + ', ' + c.n + ')')
-      // The inverse is asserted against the SAME vector rather than
-      // against itself, so a pair of mutually consistent errors cannot
-      // pass: upstream fixed the index, and split must land back on
-      // upstream's coordinates.
+      // Against upstream's coordinates, so a pair of matching errors cannot pass.
       const back = splitStoredHashIndex(c.index)
       Assert.deepEqual({ level: back.level, n: back.n },
         { level: c.level, n: c.n },
@@ -165,8 +135,7 @@ describe('vectors', () => {
       Assert.equal(formatHash(treeHash(c.n, reader)), c.root,
         'treeHash(' + c.n + ')')
     }
-    // The empty tree is SHA-256 of nothing, and is not in the vector
-    // set because upstream's TreeHash short-circuits before reading.
+    // Not in the vectors: upstream's TreeHash answers it before reading.
     Assert.equal(formatHash(treeHash(0, reader)),
       '47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=')
   })
@@ -182,8 +151,6 @@ describe('vectors', () => {
       Assert.equal(got, c.want, 'checkRecord ' + c.name)
       c.want ? accepted++ : rejected++
     }
-    // The balance is itself the assertion: a suite that drifted to all
-    // acceptances would stop testing the thing that matters.
     Assert.ok(0 < accepted, 'no accepting inclusion vectors')
     Assert.ok(accepted * 2 < rejected, 'too few rejecting inclusion vectors')
   })
@@ -227,10 +194,7 @@ describe('vectors', () => {
 })
 
 
-// SIGNED NOTES. The key, its 32-bit id and every signature below were
-// produced by upstream's own signer from a fixed seed, so this checks
-// the port against Go's construction rather than against a second
-// reading of the specification.
+// The key, its id and every signature came from upstream's signer.
 describe('note', () => {
 
   const N = V.note
@@ -240,19 +204,13 @@ describe('note', () => {
     Assert.equal(v.name, N.name)
     Assert.equal(v.keyHash, N.keyHash)
     Assert.equal(v.publicKey.length, 32)
-    // Hashing the BARE key instead of the algorithm-prefixed encoding
-    // is the classic error here, and it produces an id that disagrees
-    // with every other implementation. Pinned against upstream's.
     Assert.equal(
       keyHash(N.name, new Uint8Array([1, ...v.publicKey])), N.keyHash)
   })
 
 
   test('a-verifier-key-whose-id-was-tampered-with-is-refused', () => {
-    // Split on the FIRST TWO plus signs only. Standard base64 includes
-    // `+` in its alphabet, so a naive split('+') shreds the key and
-    // this test would pass for the wrong reason -- which is exactly why
-    // the key is the last field and a name may not contain a plus.
+    // Split on the leading plus signs only: base64 has `+` in its alphabet.
     const p1 = N.verifierKey.indexOf('+')
     const p2 = N.verifierKey.indexOf('+', p1 + 1)
     const name = N.verifierKey.slice(0, p1)
@@ -274,9 +232,6 @@ describe('note', () => {
         Assert.equal(note.verified[0].name, N.name, c.name)
       }
       else {
-        // A BAD signature by a KNOWN key must throw, not open with an
-        // empty verified list -- the difference between "nobody I know
-        // signed this" and "someone I know signed something else".
         Assert.throws(() => openNote(c.msg, known), c.name)
       }
     }
@@ -284,26 +239,16 @@ describe('note', () => {
 
 
   test('a-note-no-known-key-signed-is-refused', () => {
-    // NOT opened with an empty verified list, which is what this port
-    // did at first. Upstream refuses it (UnverifiedNoteError) and so
-    // must this: the Go side runs the same vectors, and two ports
-    // disagreeing about whether a signature check passed is the worst
-    // class of parity breach. Twin: TestTlogNotes in aontu/go.
+    // As upstream's UnverifiedNoteError refuses it.
     Assert.throws(() => openNote(N.signed[0].msg, []),
       /no verifiable signatures/)
   })
 
 
   test('an-unknown-signer-alongside-a-known-one-is-skipped', () => {
-    // THIS is the case the witness story actually needs, and it is
-    // unaffected by the rule above: a note gathering cosignatures a
-    // client does not recognise still opens, because the log's own
-    // signature is one it does know.
     const known = [parseVerifierKey(N.verifierKey)]
     const good = N.signed[0].msg
     const split = good.lastIndexOf('\n\n')
-    // A second signature line naming a key this client has never heard
-    // of, appended to a note it can verify.
     const stranger = '— other.example ' +
       Buffer.alloc(68).toString('base64') + '\n'
     const note = openNote(good + stranger, known)
