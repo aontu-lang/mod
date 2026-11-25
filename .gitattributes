@@ -1,0 +1,3 @@
+# The prompt log only grows: two branches that each appended an entry
+# keep both (DEV-PROCESS.md, "The prompt log").
+sketch/PROMPT-LOG.md merge=union
