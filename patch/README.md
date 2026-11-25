@@ -13,4 +13,9 @@ add `--reset-author` to take the commit as your own.
 
 ## Pending patches
 
-None.
+- [`0001-ci-vale.patch`](0001-ci-vale.patch) adds a `vale` job to
+  `build.yml`: it installs Vale 3.14.0, the version the aontu
+  repository pins, and runs `npm run vale`. The comment and prose gates
+  need no workflow change, since `npm test` runs them. Apply it with
+  `git am patch/0001-ci-vale.patch`, remove the patch and this entry,
+  and fold the removal in with `git commit --amend`.
