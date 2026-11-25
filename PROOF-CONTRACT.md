@@ -54,8 +54,8 @@ The object `<version>.sig` is an aontu document, one line, canonical:
 ```
 
 - `over` is the manifest's digest, `sha256:` and 64 hex characters.
-- `signer` is `ed25519:` followed by the base64url (unpadded, RFC 4648
-  §5) of the 32-byte public key. `signerId` and `parseSignerId` convert.
+- `signer` is `ed25519:` followed by the base64url (without padding,
+  RFC 4648 §5) of the 32-byte public key. `signerId` and `parseSignerId` convert.
 - `signature` is the base64url of the 64-byte Ed25519 signature over
   the bytes `signedBytes(over)` returns:
 
