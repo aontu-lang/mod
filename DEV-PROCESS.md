@@ -71,12 +71,11 @@ page. Read it before editing a page.
 
 ## Code comments
 
-- **A comment is for code that is hard to follow, or whose correct form
-  is surprising**, where a reader's first instinct would be to simplify
-  it, and so break it. It says what the code cannot: why an unobvious
-  form is needed, which invariant a change would break, what outside
-  the file forces the shape. A comment a competent reader could rebuild
-  from the code is noise, and is deleted.
+- **A comment is only for surprising code**: code whose correct form a
+  competent reader would simplify, and so break. It says what the code
+  cannot: why the unobvious form is needed, which invariant a change
+  would break, what outside the file forces the shape. Every other
+  comment is deleted, whatever it says.
 - **Intent goes in the name.** Renaming a value, extracting a function
   or naming a constant is preferred to a comment explaining the unnamed
   version. A comment that could be a name is a defect in the name.
@@ -85,9 +84,9 @@ page. Read it before editing a page.
   cited: in `docs/` or in the decision record. A requirement in a
   comment is a second copy, and the one nobody edits when the rule
   changes.
-- **A comment is a line or two.** One that runs to paragraphs is a
-  document in the wrong file: what is durable moves to a document, and
-  the rest is deleted.
+- **A comment is as short as it can be**: one line wherever one line
+  will do. A comment that runs longer is a document in the wrong file:
+  what is durable moves to a document, and the rest is deleted.
 - **Everything a comment names resolves**: a path exists, a symbol in
   backticks is defined by the code, and a decision number is in the
   decision record. A date, a version, an issue number or a count is not
