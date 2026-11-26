@@ -50,8 +50,8 @@ The client verifies proofs; it does not construct them or sign checkpoints.
 The service implementation, including quotas and deployment, is in
 `aontu-lang/system`. The log itself is federated to Sigstore's Rekor v2
 rather than run by the project, so this package is the verifier for a log
-nobody here operates -- which is why client verification has to remain
-independently buildable from public code.
+nobody here operates. That is why client verification has to remain
+something anyone can build from public code.
 
 **The paths are C2SP `tlog-tiles`.** `c2spTilePath` and
 `parseC2spTilePath` address the tiles Rekor v2 serves
@@ -75,15 +75,15 @@ that a given version has one.
 
 ## Verify the port
 
-From a clone of [the repository](https://github.com/aontu-lang/mod) —
-the published package carries `src/` and the vectors so the port can be
-READ, but not the lockfile, the test suite or `goref/`, so it cannot be
+Verify from a clone of [the repository](https://github.com/aontu-lang/mod).
+The published package carries `src/` and the vectors so the port can be
+read, but not the lockfile, the test suite or `goref/`, so it cannot be
 re-derived from the tarball:
 
 ```sh
 npm ci            # install the build toolchain
 npm run vectors   # regenerate from pinned upstream Go
-npm test          # build, then compare this port with the vectors
+npm test          # check, build, then compare this port with the vectors
 ```
 
 `npm run vectors` needs Go 1.24 and network access: `goref/` has no
@@ -96,8 +96,6 @@ that the verifier refuses malformed or inconsistent input; see the
 repository's `test/vectors.test.ts`.
 
 Read [UPSTREAM_GO_MOD.md](UPSTREAM_GO_MOD.md) before changing `src/`.
-For prose changes, follow the
-[aontu style guide](https://github.com/aontu-lang/aontu/blob/main/docs/STYLE-GUIDE.md).
 
 ## Licence
 

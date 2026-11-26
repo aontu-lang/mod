@@ -1,0 +1,76 @@
+# Terms Vale's dictionary does not know, accepted by name. Entries are
+# REGEXES, so a stem with an optional suffix accepts a family and a bare
+# word accepts only itself. Every non-blank line is a pattern, these
+# comments included, and a line opening with a hash matches no word.
+
+# LISTED ONE BY ONE, never matched by suffix. A pattern like `\w+ise`
+# accepts any word ending in those letters, `madeupise` included, and so
+# punches a hole through the error-level spelling gate this file exists
+# to make usable. Adding a stem by hand is the cost, and the cost is the
+# point.
+
+# CASE PAIRS ARE ONE ENTRY, WRITTEN AS A REGEX. Two plain lines, one for
+# each case, do not accept both: Vale turns a vocabulary into Vale.Terms,
+# which then enforces ONE spelling over the other. `[Ss]tdin` accepts the
+# pair without ruling between them.
+
+# General computing terms the dictionary lacks. The project's own terms
+# follow in sections of their own, each headed by what they name.
+[Ss]tderr
+[Ss]tdin
+stdout
+[Uu]nary
+[Vv]endoring
+[Oo]nboarding
+[Ss]andboxing
+[Ee]num
+enums
+[Ee]nv
+allowlist
+APIs
+boolean
+[Bb]ooleans
+builtins
+CLIs
+codec
+config
+cwd
+dedup
+deps
+dev
+fallthrough
+filetype
+hostnames
+lockfile
+namespace
+npm
+params
+parseable
+regexes
+repo
+repos
+subcommand
+substring
+substrings
+subtree
+subtrees
+toolchain
+unescaped
+untrusted
+untyped
+util
+validators
+vendored
+(?:uri|URI)
+
+# The transparency-log and package terms this project's pages name.
+[Aa]ontu(?:'s)?
+[Ss]umdb(?:'s)?
+Rekor
+[Ss]igstore(?:'s)?
+Fulcio
+Merkle
+bitwise
+cosignatures
+falsy
+[Uu]pstream's

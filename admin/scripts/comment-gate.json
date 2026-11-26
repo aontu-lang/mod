@@ -1,0 +1,17 @@
+{
+  "source": {
+    ".ts": "js",
+    ".cjs": "js",
+    ".go": "go"
+  },
+  "fixtures": [
+    "vectors"
+  ],
+  "skip": [
+    "node_modules",
+    "dist",
+    "dist-test",
+    ".git"
+  ],
+  "decisions": "ADR.md"
+}

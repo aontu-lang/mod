@@ -1,16 +1,6 @@
 /* Copyright (c) 2026 aontu-lang, MIT License */
 
-// THE REFUSALS THE VECTORS DO NOT REACH. The golden vectors in
-// vectors.test.ts prove this port agrees with upstream on well-formed
-// input and on corrupted proofs. They cannot reach the guards that
-// refuse input upstream's own generator would never produce: a
-// malformed hash, a tile that is too short for its own width, a proof
-// for a record outside the tree.
-//
-// Those guards are the ones that face the network. Every case here is
-// input a hostile server could send, and the assertion is always that
-// it is REFUSED -- never that it is handled gracefully, which for a
-// verifier is the same thing as accepted.
+// The refusals the vectors cannot reach: input a hostile server could send.
 
 import { describe, test } from 'node:test'
 import * as Assert from 'node:assert'
@@ -26,7 +16,7 @@ import {
 } from '../dist/index'
 import type { Tile } from '../dist/index'
 
-// The path functions are not on the 0.1.0 public surface.
+// The sumdb path functions are not exported from the package.
 import { tilePath, parseTilePath } from '../dist/tile'
 
 
@@ -45,20 +35,14 @@ describe('hash guards', () => {
   test('a-hash-that-is-not-32-bytes-is-refused', () => {
     Assert.throws(() => parseHash(''), /malformed hash/)
     Assert.throws(() => parseHash('AAAA'), /malformed hash/)
-    // 33 bytes: longer, not shorter, because a length check written as
-    // `<` instead of `!==` passes this one.
+    // Longer, not shorter: a length check written with `<` passes this one.
     Assert.throws(() => parseHash(Buffer.alloc(33).toString('base64')),
       /malformed hash/)
     Assert.equal(parseHash(formatHash(H0)).length, HASH_SIZE)
   })
 
   test('a-hash-with-a-non-canonical-spelling-is-refused', () => {
-    // UPSTREAM REFUSES ON ITS DECODER'S ERROR; Buffer has no error. It
-    // skips non-alphabet bytes, accepts missing padding and accepts the
-    // base64url alphabet, so a length check alone lets one hash have
-    // unboundedly many spellings -- and a checkpoint is compared as
-    // TEXT by witnesses, so a second spelling is a second checkpoint.
-    // Each of these decodes to the SAME 32 bytes and must still lose.
+    // Each decodes to the same bytes, and is still refused.
     const good = formatHash(H0)
     for (const bad of [
       good + '!!!!',                                    // trailing junk
@@ -72,22 +56,17 @@ describe('hash guards', () => {
     ]) {
       Assert.throws(() => parseHash(bad), /malformed hash/, JSON.stringify(bad))
     }
-    // The canonical spelling still round-trips, which is the other half:
-    // a guard that refused everything would also pass the loop above.
+    // A guard that refused everything would also pass the loop above.
     Assert.ok(hashEqual(parseHash(good), H0))
   })
 
   test('hash-equality-is-length-aware', () => {
     Assert.equal(hashEqual(H0, H0), true)
     Assert.equal(hashEqual(H0, H1), false)
-    // A short array must not compare equal to a prefix of a long one.
     Assert.equal(hashEqual(H0, H0.slice(0, 16)), false)
   })
 
   test('domain-separation-is-real', () => {
-    // The whole point of the 0x00/0x01 prefixes: a leaf and a node can
-    // never collide, so a 64-byte record cannot be passed off as an
-    // interior node. Pinned rather than assumed.
     const pair = new Uint8Array(HASH_SIZE * 2)
     pair.set(H0, 0)
     pair.set(H1, HASH_SIZE)
@@ -104,8 +83,7 @@ describe('tree guards', () => {
     Assert.deepEqual(maxpow2(2), { k: 1, l: 0 })
     Assert.deepEqual(maxpow2(3), { k: 2, l: 1 })
     Assert.deepEqual(maxpow2(9), { k: 8, l: 3 })
-    // Zero has no trailing-zero count; upstream answers 64 and so must
-    // this, because splitStoredHashIndex's loop depends on it.
+    // Upstream answers 64 for zero, and splitStoredHashIndex depends on it.
     Assert.equal(trailingZeros(0), 64)
     Assert.equal(trailingZeros(1), 0)
     Assert.equal(trailingZeros(8), 3)
@@ -117,8 +95,6 @@ describe('tree guards', () => {
   })
 
   test('a-reader-that-answers-the-wrong-number-of-hashes-is-refused', () => {
-    // A tile server that returns short data must not be able to make
-    // treeHash compute a root out of whatever it did send.
     Assert.throws(() => treeHash(13, () => []),
       /reader returned 0 hashes for 3 indexes/)
     Assert.throws(() => treeHash(13, (ix) => reader(ix).concat([H0])),
@@ -126,14 +102,7 @@ describe('tree guards', () => {
   })
 
   test('arithmetic-stays-exact-past-32-bits', () => {
-    // The trap this port is written to avoid: JavaScript's `<<` and
-    // `>>` coerce to 32 bits, so an index past 2^31 would wrap.
-    //
-    // The EXPECTED VALUES ARE IN THE VECTORS, not written here. The
-    // first draft of this test transcribed them by hand and got
-    // storedHashIndex(1, 2^31) wrong -- the port was right and the test
-    // was not, which is the exact failure mode a hand-written
-    // expectation for large arithmetic has.
+    // The expected values come from the vectors: hand-written ones are guesses.
     const big = V.storedHashIndex.filter((c: any) => 2 ** 31 <= c.n)
     Assert.ok(0 < big.length, 'no past-32-bit index vectors')
     for (const c of big) {
@@ -154,9 +123,6 @@ describe('tree guards', () => {
 describe('proof guards', () => {
 
   test('a-record-outside-the-tree-is-refused', () => {
-    // Out of bounds is a REJECTION, not a thrown error: the numbers
-    // came off the wire, so refusing is the answer, and a throw here
-    // would turn a hostile response into a crash.
     Assert.equal(checkRecord([], 0, H0, 0, H0), false)
     Assert.equal(checkRecord([], 3, H0, 3, H0), false)
     Assert.equal(checkRecord([], 3, H0, -1, H0), false)
@@ -172,8 +138,6 @@ describe('proof guards', () => {
   test('a-one-record-tree-takes-an-empty-proof-and-nothing-else', () => {
     const th = treeHash(1, reader)
     Assert.equal(checkRecord([], 1, th, 0, H0), true)
-    // A surplus hash must be refused rather than ignored: accepting it
-    // would let one proof stand for more than one tree shape.
     Assert.equal(checkRecord([H1], 1, th, 0, H0), false)
   })
 
@@ -181,7 +145,6 @@ describe('proof guards', () => {
     const th = treeHash(13, reader)
     Assert.equal(checkTree([], 13, th, 13, th), true)
     Assert.equal(checkTree([H1], 13, th, 13, th), false)
-    // And a non-empty prefix at n < t needs a real proof.
     Assert.equal(checkTree([], 13, th, 8, treeHash(8, reader)), false)
   })
 
@@ -191,7 +154,6 @@ describe('proof guards', () => {
 describe('tile guards', () => {
 
   const dataFor = (t: Tile): Uint8Array => {
-    // The tile's hashes, laid out as its data: w hashes end to end.
     const out = new Uint8Array(t.w * HASH_SIZE)
     for (let i = 0; i < t.w; i++) {
       out.set(STORE[storedHashIndex(t.l * t.h, t.n * Math.pow(2, t.h) + i)],
@@ -208,16 +170,11 @@ describe('tile guards', () => {
   })
 
   test('a-hash-above-the-leaf-level-is-recomputed-from-the-tile', () => {
-    // A level-1 hash inside a tile is NOT stored in the tile directly:
-    // it is recomputed from the leaves under it, which is the recursive
-    // half of tileHash and the reason a tile of 2^H leaves serves every
-    // level within it. Reading only leaf hashes never exercises it.
+    // Recomputed from the leaves under it, which reading a leaf never exercises.
     const index = storedHashIndex(1, 0)
     const t = tileForIndex(2, index)
     const full: Tile = { ...t, w: Math.pow(2, t.h) }
     const got = hashFromTile(full, dataFor(full), index)
-    // And the recomputed value is the stored one: the tile's own
-    // arithmetic must agree with the log's.
     Assert.equal(formatHash(got), formatHash(STORE[index]))
   })
 
@@ -228,8 +185,6 @@ describe('tile guards', () => {
   })
 
   test('an-index-that-is-not-in-this-tile-is-refused', () => {
-    // The check that stops a server answering one tile's request with
-    // another tile's bytes.
     const t: Tile = { h: 2, l: 0, n: 0, w: 4 }
     Assert.throws(() => hashFromTile(t, dataFor(t), storedHashIndex(0, 500)),
       /is in .* not /)
@@ -256,23 +211,15 @@ describe('tile guards', () => {
   })
 
   test('new-tiles-cover-a-growing-tree', () => {
-    // Nothing to publish for an empty tree, and nothing for a tree that
-    // did not grow.
     Assert.deepEqual(newTiles(2, 0, 0), [])
     Assert.deepEqual(newTiles(2, 8, 8), [])
-    // Growing from nothing to 8 records at height 2 publishes the
-    // level-0 tiles plus the level-1 tile above them.
     const tiles = newTiles(2, 0, 8)
     Assert.ok(0 < tiles.length)
     for (const t of tiles) {
       Assert.equal(t.h, 2)
       Assert.ok(0 < t.w && t.w <= 4)
-      // Every published tile must have a well-formed path that parses
-      // back to itself -- otherwise a publisher writes objects no
-      // client can name.
       Assert.deepEqual(parseTilePath(tilePath(t)), t)
     }
-    // A partial tile appears when the tree does not fill one.
     Assert.ok(newTiles(2, 0, 7).some((t) => 4 > t.w))
   })
 
@@ -290,7 +237,6 @@ describe('tile guards', () => {
   })
 
   test('the-data-level-round-trips', () => {
-    // Level -1 is spelled `data` and is how raw records are addressed.
     const t: Tile = { h: 2, l: -1, n: 7, w: 4 }
     Assert.equal(tilePath(t), 'tile/2/data/007')
     Assert.deepEqual(parseTilePath('tile/2/data/007'), t)
@@ -307,8 +253,7 @@ describe('note guards', () => {
     for (const bad of [
       '', 'noplus', '+missing+name', 'name+notahex+AAAA',
       'name+0000000+AAAA', 'na me+00000000+AAAA', 'name+00000000+',
-      // Exactly ONE plus: a name and something, with no key field at
-      // all. Distinct from the no-plus case, and a separate arm.
+      // One plus only: no key field at all.
       'name+00000000',
     ]) {
       Assert.throws(() => parseVerifierKey(bad), /note:/, JSON.stringify(bad))
@@ -334,7 +279,7 @@ describe('note guards', () => {
       'text\n\nnot-a-sig-line\n',
       'text\n\n—  AAAAAAA=\n',       // empty name
       'text\n\n— name \n',           // empty signature
-      'text\n\n— name AA==\n',       // signature under five bytes
+      'text\n\n— name AA==\n',       // signature too short for a key id
     ]) {
       Assert.throws(() => openNote(bad, known), /malformed note/,
         JSON.stringify(bad))
@@ -342,20 +287,13 @@ describe('note guards', () => {
   })
 
   test('a-signature-whose-base64-is-not-canonical-is-refused', () => {
-    // Upstream reads `sig, err := base64.StdEncoding.DecodeString(b64)`
-    // and refuses on err. Every spelling here decodes to the SAME valid
-    // signature bytes, so before the re-encode check each one opened the
-    // note and reported it verified -- one note, many byte-distinct
-    // spellings, which is the equivocation a witness protocol cannot
-    // tolerate.
+    // Every spelling decodes to the same valid signature bytes.
     const good = V.note.signed[0].msg as string
     const line = good.slice(good.lastIndexOf('\n', good.length - 2) + 1)
     const head = good.slice(0, good.length - line.length)
     const b64 = line.slice(line.lastIndexOf(' ') + 1).replace(/\n$/, '')
     const prefix = line.slice(0, line.length - b64.length - 1)
 
-    // The fixture itself must still open, or the loop below proves
-    // nothing about the spellings.
     Assert.equal(openNote(good, known).verified.length, 1)
 
     for (const bad of [
@@ -382,11 +320,6 @@ describe('note guards', () => {
   })
 
   test('a-name-is-scanned-with-gos-space-set-not-javascripts', () => {
-    // The two sets differ in BOTH directions, and `\s` was wrong both
-    // ways: U+0085 is a space to Go and not to JavaScript, so a name
-    // carrying one passed here and was refused upstream; U+FEFF is the
-    // reverse. Neither is reachable from the vectors, which is why the
-    // difference stood.
     const key = V.note.verifierKey.slice(V.note.verifierKey.indexOf('+'))
     for (const cp of [0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x20, 0x85, 0xa0,
       0x1680, 0x2000, 0x200a, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000]) {
@@ -394,8 +327,7 @@ describe('note guards', () => {
       Assert.throws(() => parseVerifierKey(name + key),
         /malformed verifier id/, 'U+' + cp.toString(16))
     }
-    // Not in Go's set, so not in ours: these reach the hash check and
-    // fail THERE, with a different message.
+    // Not spaces to Go: these reach the hash check instead.
     for (const cp of [0xfeff, 0x200b, 0x180e]) {
       const name = 'x' + String.fromCodePoint(cp) + 'example'
       Assert.throws(() => parseVerifierKey(name + key),
@@ -410,8 +342,6 @@ describe('note guards', () => {
   })
 
   test('a-duplicated-signature-counts-once', () => {
-    // A note padded with the same good signature repeated must not look
-    // better-witnessed than a note carrying it once.
     const good = V.note.signed[0].msg as string
     const split = good.lastIndexOf('\n\n')
     const sig = good.slice(split + 2)
@@ -421,11 +351,7 @@ describe('note guards', () => {
   })
 
   test('a-short-signature-by-a-known-key-is-refused', () => {
-    // Five bytes is enough to carry a key id and pass the length gate,
-    // but not enough to be an Ed25519 signature. A verifier that fed it
-    // to the crypto layer and took the exception as "unverified" would
-    // turn a malformed signature into a silently skipped one, which is
-    // how a known key's signature goes missing without anyone noticing.
+    // Long enough to carry a key id, too short to be a signature: refused, not skipped.
     const sig = Buffer.alloc(10)
     sig.writeUInt32BE(V.note.keyHash, 0)
     const msg = 'text\n\n— ' + V.note.name + ' ' +
@@ -446,8 +372,6 @@ describe('note guards', () => {
   })
 
   test('extra-checkpoint-lines-are-ignored-for-forwards-compatibility', () => {
-    // A later version adding lines must not invalidate today's clients:
-    // that is the rule that lets the format grow at all.
     const text = V.note.name + '\n13\n' + formatHash(H0) + '\nextra\nmore\n'
     const t = parseTree(text, V.note.name)
     Assert.equal(t.n, 13)

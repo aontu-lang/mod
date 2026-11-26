@@ -1,6 +1,6 @@
 # Third-party notices
 
-## golang.org/x/mod — BSD-3-Clause
+## golang.org/x/mod, BSD-3-Clause
 
 `src/hash.ts`, `src/tree.ts`, `src/proof.ts`, `src/tile.ts` and
 `src/note.ts` are **mechanical translations** of

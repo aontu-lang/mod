@@ -1,13 +1,5 @@
 /* Copyright (c) 2026 aontu-lang, MIT License */
 
-// THE TRANSPARENCY-LOG CLIENT for the Aontu module system: the
-// VERIFYING half of golang.org/x/mod/sumdb/tlog, ported to TypeScript
-// and held to upstream's own output by the golden vectors in
-// ../vectors/ (see ../UPSTREAM_GO_MOD.md).
-//
-// Only the client half is here. A log proves; a client checks. See
-// proof.ts for why the provers are deliberately absent.
-
 export { HASH_SIZE, recordHash, nodeHash, formatHash, parseHash, hashEqual }
   from './hash'
 export type { Hash } from './hash'
@@ -21,16 +13,12 @@ export type { HashReader } from './tree'
 export { checkRecord, checkTree } from './proof'
 export type { RecordProof, TreeProof } from './proof'
 
-// The tile arithmetic is sumdb's and C2SP's alike; the PATHS this
-// package commits to are C2SP tlog-tiles (c2sp.ts), the shape Rekor v2
-// serves. sumdb's own path encoding stays in tile.ts for the vectors.
+// Only C2SP tile paths are exported; sumdb's stay internal, for the vectors.
 export { tileForIndex, hashFromTile, newTiles } from './tile'
 export type { Tile } from './tile'
 export { C2SP_TILE_HEIGHT, c2spTilePath, parseC2spTilePath } from './c2sp'
 export type { C2spTile } from './c2sp'
 
-// The key provider's proof, under the contract of ADR-024
-// (../PROOF-CONTRACT.md).
 export { SIGNATURE_ENCODING, signedBytes, signerId, parseSignerId, verifyKeyProof, smallOrderKey }
   from './keyproof'
 export type { KeyProof } from './keyproof'
@@ -38,10 +26,4 @@ export type { KeyProof } from './keyproof'
 export { keyHash, parseVerifierKey, openNote, parseTree } from './note'
 export type { Verifier, Note, Tree } from './note'
 
-// A TRAILING LINE, DELIBERATELY. With nothing after the last
-// `export type` above, source-mapped coverage attributes two uncovered
-// lines to it -- an end-of-file artefact rather than a gap, since the
-// same run over dist/index.js without --enable-source-maps reports
-// 100 %. Any trailing content answers it, and this comment is it. A
-// `node:coverage ignore` directive would not: it skips the lines that
-// FOLLOW it, and the export accessors are all above.
+// Keep a line here, after the last export: docs/contributing/verifier.md, "Coverage".

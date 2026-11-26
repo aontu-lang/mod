@@ -1,0 +1,26 @@
+{
+  "pages": [
+    "README.md",
+    "PROOF-CONTRACT.md",
+    "SECURITY.md",
+    "UPSTREAM_GO_MOD.md",
+    "THIRD_PARTY_NOTICES.md",
+    "docs/**/*.md"
+  ],
+  "tutorials": [],
+  "contributor": [
+    "docs/contributing/**/*.md"
+  ],
+  "links": [
+    "**/*.md"
+  ],
+  "skip": [
+    "node_modules",
+    ".git",
+    "sketch",
+    "dist",
+    "dist-test"
+  ],
+  "names": [],
+  "internal": []
+}

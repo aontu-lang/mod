@@ -50,10 +50,12 @@
   ],
   "scripts": {
     "build": "tsc --build src test",
-    "test": "npm run build && node --enable-source-maps --test \"dist-test/**/*.test.js\"",
+    "gates": "node admin/scripts/comment-gate.cjs && node admin/scripts/prose-gate.cjs",
+    "test": "npm run gates && npm run build && node --enable-source-maps --test \"dist-test/**/*.test.js\"",
     "test-cov": "npm run build && node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test \"dist-test/**/*.test.js\"",
     "test-cov-check": "npm run build && node --enable-source-maps --experimental-test-coverage --test-coverage-exclude=\"dist-test/**\" --test-coverage-exclude=\"test/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test \"dist-test/**/*.test.js\"",
     "vectors": "cd goref && go run . > ../vectors/tlog.json",
+    "vale": "vale sync && vale --minAlertLevel=error $(node admin/scripts/prose-gate.cjs --list) && node admin/scripts/vale-counts.cjs",
     "clean": "rm -rf dist dist-test node_modules"
   },
   "devDependencies": {

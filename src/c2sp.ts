@@ -1,20 +1,7 @@
 /* Copyright (c) 2026 aontu-lang, MIT License */
 
-// C2SP tlog-tiles ADDRESSING (https://c2sp.org/tlog-tiles), the shape
-// Sigstore's Rekor v2 serves and the one this package commits to for
-// fetching (ADR-019). The hashes, the proofs and the notes are the same
-// as Go sumdb's; only the paths differ, and tile.ts keeps sumdb's for
-// the differential vectors.
-//
-//   tile/<L>/<N>          a full tile of hashes at level L
-//   tile/<L>/<N>.p/<W>    a partial tile, W hashes wide (1 to 255)
-//   tile/entries/<N>      an entry bundle, the level -1 data tile
-//
-// N is written as its decimal digits in groups of three, every group
-// but the last prefixed with x: 1234067 is x001/x234/067, 5 is 005. The
-// tile height is 8 and is not in the path. A client that computes a
-// different path fetches a 404 and calls it a missing tile, which is
-// why the encoding is held exactly.
+// C2SP tlog-tiles addressing (https://c2sp.org/tlog-tiles); the encoding is
+// described in docs/contributing/verifier.md, "Tiles and their paths".
 
 export const C2SP_TILE_HEIGHT = 8
 
@@ -57,11 +44,7 @@ export function c2spTilePath(t: C2spTile): string {
 }
 
 
-// The tile a path names. Refuses anything but the exact encoding: a
-// leading zero in a level, a group of the wrong length, a leading
-// all-zero group, an x on the last group or none on an earlier one, a
-// width outside 1 to 255, an index past what a number holds exactly.
-// The path is formatted again and must come back the same.
+// The tile a path names. A path that does not format back to itself is refused.
 export function parseC2spTilePath(path: string): C2spTile {
   const m = /^tile\/(entries|0|[1-9][0-9]?)\/((?:x[0-9]{3}\/)*[0-9]{3})(?:\.p\/(0|[1-9][0-9]{0,2}))?$/.exec(path)
   if (null == m) {

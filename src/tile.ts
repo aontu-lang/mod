@@ -1,40 +1,16 @@
 /* Copyright (c) 2026 aontu-lang, MIT License */
 
-// Derived from golang.org/x/mod/sumdb/tlog (tile.go).
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style licence; see
-// LICENSES/BSD-3-Clause-Go.txt and THIRD_PARTY_NOTICES.md.
-//
-// TILES: the log's hashes cut into fixed-height blocks, each a single
-// immutable object at a stable path. This is what makes a log servable
-// as static files behind a CDN with no request-shaped computation, the
-// direction Certificate Transparency and Sigstore both converged on
-// after starting with parameterised proof endpoints.
-//
-// THE ADDRESSING IS GO'S SUMDB SHAPE, NOT C2SP `tlog-tiles`:
-// `tile/<H>/<L>/<N>`, with the tile height in the path and level -1
-// spelled `data`. C2SP omits the height and names entry bundles
-// `tile/entries/<N>`. The hashing, the proofs and the note handling are
-// compatible with either; only the addressing is not.
-//
-// The path encoding chunks N three digits at a time (`x123/x456/789`)
-// so no directory holds more than a few thousand entries. That is an
-// operational detail of the FORMAT, not of any one server, which is why
-// it is here and must match upstream exactly: a client that computes a
-// different path fetches a 404 and calls it a missing tile.
-//
-// The same no-bitwise-arithmetic rule as tree.ts applies, and harder:
-// `n << level >> H` is three shifts deep in one expression upstream,
-// and every one of them is a silent 32-bit truncation in JavaScript.
+// Copyright 2019 The Go Authors. All rights reserved. Derived from golang.org/x/mod/sumdb/tlog (tile.go); use of this source code is governed by a BSD-style licence, see LICENSES/BSD-3-Clause-Go.txt and THIRD_PARTY_NOTICES.md.
+
+// Go sumdb's tile paths, not C2SP's, and no bitwise operators on an index:
+// docs/contributing/verifier.md, "Arithmetic" and "Tiles and their paths".
 
 import { HASH_SIZE, nodeHash } from './hash'
 import { splitStoredHashIndex } from './tree'
 import type { Hash } from './hash'
 
 
-// A tile of hashes. H is its height, L its level in the tiling, N its
-// number within that level, and W its width -- W < 2^H is a partial
-// tile, which is how the newest, still-growing tile is published.
+// Height, level, number within the level, and width; W < 2^H is a partial tile.
 export type Tile = {
   h: number
   l: number
@@ -43,22 +19,16 @@ export type Tile = {
 }
 
 
-// Right shift, as division. Tolerates a shift count past 53 by
-// answering 0, which is what the arithmetic means and what a real
-// `>>` would NOT do in JavaScript (it masks the count to 5 bits, so
-// `x >> 64` is `x >> 0` -- the exact trap this avoids).
 function shr(n: number, bits: number): number {
   return Math.floor(n / Math.pow(2, bits))
 }
 
-// Left shift, as multiplication.
 function shl(n: number, bits: number): number {
   return n * Math.pow(2, bits)
 }
 
 
-// The tile of height h holding the given stored-hash index, together
-// with the byte range within that tile's data.
+// The tile of height h holding a stored-hash index, and its byte range there.
 function tileForIndexRange(h: number, index: number):
   { tile: Tile, start: number, end: number } {
   const split = splitStoredHashIndex(index)
@@ -79,7 +49,6 @@ function tileForIndexRange(h: number, index: number):
 }
 
 
-// The tile of height h and least width holding the given index.
 export function tileForIndex(h: number, index: number): Tile {
   if (h <= 0) {
     throw new Error('tileForIndex: invalid height ' + h)
@@ -88,12 +57,7 @@ export function tileForIndex(h: number, index: number): Tile {
 }
 
 
-// The hash at `index`, read out of tile t's data.
-//
-// Every one of these guards is a rejection of untrusted input rather
-// than an assertion about the caller: tile bytes come off the network,
-// and a tile that is too short, or is not the tile the index lives in,
-// must be refused rather than read past.
+// Tile bytes come off the network: each guard refuses, rather than reads past.
 export function hashFromTile(t: Tile, data: Uint8Array, index: number): Hash {
   if (t.h < 1 || t.h > 30 || t.l < 0 || t.l >= 64 ||
     t.w < 1 || t.w > Math.pow(2, t.h)) {
@@ -112,11 +76,8 @@ export function hashFromTile(t: Tile, data: Uint8Array, index: number): Hash {
 }
 
 
-// The subtree hash of the (2^K)-1 hashes in data.
 function tileHash(data: Uint8Array): Hash {
-  // Upstream panics here. Unreachable through hashFromTile, whose
-  // computed range is always at least one hash wide, and kept so the
-  // translation stays line-comparable with upstream.
+  // Upstream panics here; hashFromTile's range is at least one hash wide.
   /* node:coverage ignore next 3 */
   if (0 === data.length) {
     throw new Error('tlog: bad math in tileHash')
@@ -129,8 +90,6 @@ function tileHash(data: Uint8Array): Hash {
 }
 
 
-// The tiles that must be published when the tree grows from oldTreeSize
-// to newTreeSize.
 export function newTiles(
   h: number, oldTreeSize: number, newTreeSize: number,
 ): Tile[] {
@@ -157,12 +116,9 @@ export function newTiles(
 }
 
 
-// Three digits at a time, so no directory grows unbounded.
 const PATH_BASE = 1000
 
 
-// The path describing t: `tile/<h>/<l>/<nnn>` with `.p/<w>` appended
-// for a partial tile, and level -1 spelled `data`.
 export function tilePath(t: Tile): string {
   let n = t.n
   let nStr = pad3(n % PATH_BASE)
@@ -181,16 +137,7 @@ function pad3(n: number): string {
 }
 
 
-// The inverse of tilePath, and Go sumdb paths only: the height field is
-// required and must satisfy 1 <= h <= 30, so a conforming C2SP
-// `tlog-tiles` path is refused here as malformed.
-//
-// THE LAST LINE IS THE WHOLE CHECK. Upstream re-renders the parsed tile
-// and refuses anything that does not round-trip, which is how a path
-// with a leading zero, a redundant `x000/`, or any other second
-// spelling of the same coordinates is rejected. Without it a tile would
-// have more than one name, and a cache keyed by path would hold the
-// same tile twice under names a client could not tell apart.
+// The final round trip through tilePath is what refuses a second spelling.
 export function parseTilePath(path: string): Tile {
   const f = path.split('/')
   if (f.length < 4 || 'tile' !== f[0]) {
@@ -233,20 +180,8 @@ export function parseTilePath(path: string): Tile {
 }
 
 
-// Go's strconv.Atoi, near enough: digits and nothing else.
-// `Number('')` is 0 and `Number('1e3')` is 1000, so neither is usable
-// here -- a path element that is not plainly digits is malformed.
-//
-// LEADING ZEROS ARE ACCEPTED, and must be: the path encodes N in
-// zero-padded three-digit groups (`x001/x234/067`), so `000` is the
-// ordinary spelling of nought and a stricter rule rejects a
-// well-formed path. Refusing them here also duplicates a check that
-// already exists in a stronger form -- `parseTilePath` re-renders the
-// tile and compares, which rejects every alternate spelling including
-// `0000` and `x000/000`, and does it for the whole path rather than
-// one element at a time. (A stricter rule here is exactly what the
-// differential vectors caught: upstream's `strconv.Atoi("000")` is 0,
-// and this port refused it.)
+// Go's strconv.Atoi: digits only, since `Number('')` is 0 and `Number('1e3')`
+// is 1000. Leading zeros are accepted, as `000` is an ordinary group.
 function intOf(s: string): number | undefined {
   if (!/^[0-9]+$/.test(s)) {
     return undefined

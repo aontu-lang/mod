@@ -73,7 +73,7 @@ Derived from `proxy.golang.org` on 2026-09-13:
    .DecodeString(s)` and refuses on `err`. Node's `Buffer` has no
    `err`: it skips non-alphabet bytes, accepts missing padding and
    accepts the base64url alphabet, so a length check alone lets one
-   hash, one signature or one key have unboundedly many spellings. Each
+   hash, one signature or one key have any number of spellings. Each
    decode site therefore requires the bytes to re-encode to exactly the
    input. That closes the accepting direction, and costs two kinds of
    input upstream would take: a value with an embedded `\n` or `\r`,
@@ -92,7 +92,7 @@ Derived from `proxy.golang.org` on 2026-09-13:
    on a signer name. A JavaScript string has already been decoded, and
    a decode error has already become U+FFFD, so neither test can be
    made here. This port refuses U+FFFD outright, which refuses a note
-   whose text legitimately contains one — the availability direction,
+   whose text legitimately contains one: the availability direction,
    and the only one available to it.
 
 ## Changing any of this
